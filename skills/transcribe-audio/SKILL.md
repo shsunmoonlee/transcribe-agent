@@ -47,5 +47,8 @@ https://transcribe.so/settings/api-keys sent as the Bearer token.
 ## Related
 
 - Retrieve results, subtitles, clips, Q&A: see the `get-transcript` skill
+- CLI alternative for shell workflows (pure-JSON stdout, budget-gated `run`):
+  `npm install -g transcribe-so`; see the root SKILL.md of
+  https://github.com/shsunmoonlee/transcribe-agent
 - REST equivalent of everything here: https://transcribe.so/api/v1/openapi.yaml
 - Developer docs: https://transcribe.so/developers/docs

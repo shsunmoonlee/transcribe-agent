@@ -1,0 +1,23 @@
+{
+  "name": "transcribe-agent",
+  "owner": {
+    "name": "transcribe.so",
+    "email": "support@transcribe.so",
+    "url": "https://transcribe.so"
+  },
+  "metadata": {
+    "description": "transcribe.so agent tooling: remote MCP server, Claude skills, and the transcribe-so CLI.",
+    "version": "1.1.0"
+  },
+  "plugins": [
+    {
+      "name": "transcribe-so",
+      "source": "./",
+      "description": "Transcribe audio and video (YouTube, podcasts, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips — via the transcribe.so remote MCP server.",
+      "skills": [
+        "./skills/transcribe-audio",
+        "./skills/get-transcript"
+      ]
+    }
+  ]
+}
