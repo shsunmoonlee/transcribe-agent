@@ -46,9 +46,12 @@ export function exitCodeFor(err: ApiError): number {
     case 'spend_cap_exceeded':
       return EXIT.PAYMENT;
     case 'rate_limited':
-    case 'qna_quota_exceeded':
     case 'internal_error':
       return EXIT.TRANSIENT;
+    // Not transient on a CLI timescale: the daily Q&A allowance frees up in
+    // hours, not seconds. Plain error so agents stop asking, not retry.
+    case 'qna_quota_exceeded':
+      return EXIT.ERROR;
   }
   if (err.status === 401) return EXIT.AUTH;
   if (err.status === 402) return EXIT.PAYMENT;
@@ -61,7 +64,21 @@ export function exitCodeFor(err: ApiError): number {
 // a synthesized envelope and exit 1.
 export function handleFailure(err: unknown): never {
   if (err instanceof ApiError) {
-    process.stdout.write(err.rawText.endsWith('\n') ? err.rawText : err.rawText + '\n');
+    if (err.envelope !== null) {
+      process.stdout.write(err.rawText.endsWith('\n') ? err.rawText : err.rawText + '\n');
+    } else {
+      // Upstream body was not JSON (CF error page, empty 502, ...). Keep
+      // stdout jq-safe with a synthesized envelope instead of raw HTML.
+      process.stdout.write(
+        JSON.stringify({
+          error: {
+            code: 'upstream_error',
+            message: err.rawText.slice(0, 300),
+            http_status: err.status,
+          },
+        }) + '\n'
+      );
+    }
     process.stderr.write(`${err.message}\n`);
     if (err.code === 'not_ready') {
       process.stderr.write(
@@ -107,14 +124,18 @@ export class TranscribeAPI {
   }
 
   // Retry policy: decided on error.code, never on a bare 429 status.
-  // Only per-minute `rate_limited` responses that carry a short Retry-After
-  // are retried (fair-use / concurrency / daily-allowance exhaustion also
-  // reports 429 but must never be auto-retried — fair-use has no short
-  // Retry-After window and qna_quota_exceeded is a different code).
+  // Only per-minute `rate_limited` responses with a short, finite
+  // Retry-After header are retried; fair-use / daily-allowance exhaustion
+  // shares the code but carries no short Retry-After window. Job-creating
+  // POSTs (create/retry) are never auto-retried at all — resubmitting a
+  // charge is the caller's call, idempotency key or not.
   async request(path: string, options: RequestOptions = {}): Promise<ApiResponse> {
     const method = options.method ?? 'GET';
     const url = this.buildUrl(path, options.query);
     const maxAttempts = 3;
+    const isJobCreatingPost =
+      method === 'POST' &&
+      (path === '/transcriptions' || /\/retry$/.test(path));
 
     for (let attempt = 1; ; attempt++) {
       const headers: Record<string, string> = {
@@ -148,10 +169,10 @@ export class TranscribeAPI {
 
       const retryable =
         err.code === 'rate_limited' &&
+        !isJobCreatingPost &&
         retryAfterSeconds !== null &&
         Number.isFinite(retryAfterSeconds) &&
-        retryAfterSeconds <= 90 &&
-        !/fair.use/i.test(err.envelope?.error?.message ?? '');
+        retryAfterSeconds <= 90;
 
       if (retryable && attempt < maxAttempts) {
         const waitSec = Math.max(1, retryAfterSeconds!);

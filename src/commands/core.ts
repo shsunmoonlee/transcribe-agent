@@ -99,9 +99,10 @@ export async function waitLoop(
   api: TranscribeAPI,
   id: number,
   opts: { timeoutSec: number; include?: string }
-): Promise<{ body: any; rawText: string; timedOut: boolean }> {
+): Promise<{ body: any; rawText: string; timedOut: boolean; notAJob?: boolean }> {
   const deadline = Date.now() + opts.timeoutSec * 1000;
   let last: { body: any; rawText: string } | null = null;
+  let quotedPolls = 0;
 
   for (;;) {
     const remaining = Math.ceil((deadline - Date.now()) / 1000);
@@ -117,7 +118,18 @@ export async function waitLoop(
     if (TERMINAL_STATUSES.has(status)) {
       return { body: res.json, rawText: res.rawText, timedOut: false };
     }
-    if (status === 'queued' || status === 'quoted') {
+    if (status === 'quoted') {
+      // The wire reports concurrency-queued jobs as "queued"; a row that
+      // shows "quoted" is a quote that was never started (createQuote's
+      // transcription_id, not a create 202 id). It will never progress.
+      quotedPolls++;
+      process.stderr.write(
+        'this id looks like a quote, not a job; only the create 202 id is pollable\n'
+      );
+      if (quotedPolls >= 2) {
+        return { body: res.json, rawText: res.rawText, timedOut: false, notAJob: true };
+      }
+    } else if (status === 'queued') {
       // Concurrency cap: the job waits FIFO for a free slot. Expected
       // state, not an error; never re-create the job.
       process.stderr.write('waiting for a concurrency slot\n');
@@ -137,6 +149,12 @@ export async function wait(argv: any): Promise<void> {
       include: argv.include,
     });
     printRaw(result.rawText);
+    if (result.notAJob) {
+      process.stderr.write(
+        `id ${argv.id} is a quote row (status=quoted), not a started job; pass the id from the create 202 response\n`
+      );
+      process.exit(EXIT.ERROR);
+    }
     if (result.timedOut) {
       process.stderr.write(`wait timed out after ${argv.timeout}s (job still running)\n`);
       process.exit(EXIT.TRANSIENT);
@@ -177,7 +195,13 @@ export async function run(argv: any): Promise<void> {
     const billedMinutes = quoteRes.json?.billed_minutes;
     process.stderr.write(`quote: $${retailUsd.toFixed(2)} for ${billedMinutes} billed minute(s)\n`);
 
-    if (!Number.isFinite(retailUsd) || retailUsd > argv.maxUsd) {
+    // Belt and suspenders on top of the yargs .check(): a non-finite budget
+    // must never let `retailUsd > maxUsd` evaluate false and slip through.
+    if (
+      !Number.isFinite(argv.maxUsd) ||
+      !Number.isFinite(retailUsd) ||
+      retailUsd > argv.maxUsd
+    ) {
       printJson({
         error: {
           code: 'max_usd_exceeded',
@@ -202,6 +226,12 @@ export async function run(argv: any): Promise<void> {
     );
 
     const waited = await waitLoop(api, id, { timeoutSec: argv.timeout });
+    if (waited.notAJob) {
+      // Should be unreachable: run always polls the create 202 id.
+      printRaw(waited.rawText);
+      process.stderr.write(`transcription ${id} unexpectedly reports status=quoted\n`);
+      process.exit(EXIT.ERROR);
+    }
     if (waited.timedOut) {
       printRaw(waited.rawText);
       process.stderr.write(

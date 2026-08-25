@@ -136,7 +136,7 @@ export async function upload(argv: any): Promise<void> {
     const putResponse = await fetch(uploadUrl, {
       method: 'PUT',
       headers: { 'Content-Type': contentType },
-      body: new Uint8Array(readFileSync(file)),
+      body: readFileSync(file),
     });
     if (!putResponse.ok) {
       const text = await putResponse.text();

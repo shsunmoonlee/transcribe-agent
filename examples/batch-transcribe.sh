@@ -26,7 +26,7 @@ for file in "$FOLDER"/*.{mp3,m4a,wav,flac,ogg,mp4,mov,webm,avi}; do
   upload_id=$(echo "$up" | jq -r .upload_id)
   duration=$(echo "$up" | jq -r .duration_seconds)
 
-  echo "transcribing: $base (${duration%s}s, budget \$$MAX_USD)" >&2
+  echo "transcribing: $base (${duration}s, budget \$$MAX_USD)" >&2
   if transcribe-so run --source upload \
       --upload-id "$upload_id" \
       --duration "$duration" \
@@ -38,6 +38,9 @@ for file in "$FOLDER"/*.{mp3,m4a,wav,flac,ogg,mp4,mov,webm,avi}; do
     # 6 = local budget refusal (raise MAX_USD), 4 = wallet/spend cap,
     # 5 = transient (retry later). Stop on payment problems, keep going otherwise.
     echo "failed ($code): $base" >&2
-    [ "$code" -eq 4 ] && { echo "wallet/spend-cap problem; stopping" >&2; exit 4; }
+    if [ "$code" -eq 4 ]; then
+      echo "wallet/spend-cap problem; stopping" >&2
+      exit 4
+    fi
   fi
 done

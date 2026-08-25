@@ -33,7 +33,7 @@ official website: https://transcribe.so
 
 **Rule 2 - Local files go through `upload` first.** `create` never accepts a filesystem path. Run `transcribe-so upload <file>`, then pass the returned `upload_id` plus `--duration` with `--source upload`. URL sources (`youtube`, `platform_url`, `external_url`) must be publicly fetchable without auth.
 
-**Rule 3 - `status: "queued"` on create is SUCCESS, not an error.** It means the account's concurrency cap is reached and the job waits FIFO for a slot (later GETs may show `quoted` - same state, two words). Never re-submit a queued job. Exception: `source=upload` is REJECTED at the cap with a fair-use error instead of being queued - wait for a running job to finish; do not hammer retry.
+**Rule 3 - `status: "queued"` on create is SUCCESS, not an error.** It means the account's concurrency cap is reached and the job waits FIFO for a slot. Never re-submit a queued job. A GET showing `quoted` is different: that row is a quote that was never started (see Rule 1) and will never progress. Exception: `source=upload` is REJECTED at the cap with a fair-use error instead of being queued - wait for a running job to finish; do not hammer retry.
 
 **Rule 4 - Never hand-roll polling.** Use `wait <id>` or `run`; they drive the server's long-poll endpoint in capped windows. A `waiting for a concurrency slot` line on stderr is normal.
 
@@ -59,7 +59,7 @@ New accounts start with free credit. The CLI refuses to send the key to a non-de
 | Code | Meaning | What to do |
 |------|---------|------------|
 | 0 | success | parse stdout |
-| 1 | API or generic error (including `not_ready`) | read `error.code`; `not_ready` means run `wait <id>` first |
+| 1 | API or generic error (including `not_ready`, `qna_quota_exceeded`) | read `error.code`; `not_ready` means run `wait <id>` first; a used-up Q&A allowance frees on a rolling 24h window |
 | 2 | usage error / custom-host refusal | fix the flags |
 | 3 | auth (401, `scope_forbidden`, missing key) | check TRANSCRIBE_API_KEY and its scopes |
 | 4 | payment (`insufficient_funds`, `spend_cap_exceeded`) | top up or raise the key's cap |
@@ -165,4 +165,4 @@ transcribe-so subtitles "$ID" --format vtt --preset tiktok-shorts > clip.vtt
 | Cited answer | `ask <id> -q "..."` |
 | Local file | `upload <file>` then `run --source upload --upload-id ... --duration ...` |
 
-Also available as a remote MCP server (https://transcribe.so/mcp) and a Claude Code plugin from this repo. REST reference: https://transcribe.so/openapi.json and https://transcribe.so/developers/docs.
+Also available as a remote MCP server (https://transcribe.so/mcp) and a Claude Code plugin (`/plugin marketplace add shsunmoonlee/transcribe-agent`, then `/plugin install transcribe-so@transcribe-agent`). REST reference: https://transcribe.so/openapi.json and https://transcribe.so/developers/docs.

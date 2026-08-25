@@ -23,7 +23,7 @@ hard rules, and exit codes.
 
 ```
 /plugin marketplace add shsunmoonlee/transcribe-agent
-/plugin install transcribe-so
+/plugin install transcribe-so@transcribe-agent
 ```
 
 The plugin connects Claude to the remote MCP server at
@@ -35,7 +35,7 @@ triggers the OAuth browser flow; alternatively authenticate with a
 ### 3. CLI (any script, cron job, or agent with a shell)
 
 ```bash
-npm install -g transcribe-so     # or: pnpm add -g transcribe-so
+npm install -g transcribe-so     # or: pnpm install -g transcribe-so
 export TRANSCRIBE_API_KEY=tsk_live_...   # https://transcribe.so/settings/api-keys
 transcribe-so me
 ```

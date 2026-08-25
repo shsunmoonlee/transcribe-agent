@@ -62,6 +62,12 @@ function sourceOptions(y: Argv): Argv {
       } else if (!argv.url) {
         throw new Error(`source=${argv.source} requires --url`);
       }
+      if (
+        argv.duration !== undefined &&
+        (!Number.isFinite(argv.duration) || argv.duration <= 0)
+      ) {
+        throw new Error('--duration must be a positive number of seconds');
+      }
       return true;
     });
 }
@@ -169,6 +175,12 @@ const parser = yargs(hideBin(process.argv))
           default: 1800,
         })
         .option('include', { describe: INCLUDE_DESCRIBE, type: 'string' })
+        .check((argv: any) => {
+          if (!Number.isFinite(argv.maxUsd) || argv.maxUsd < 0) {
+            throw new Error('--max-usd must be a finite number >= 0 (e.g. --max-usd 2)');
+          }
+          return true;
+        })
         .example(
           '$0 run --source youtube --url "https://youtu.be/jNQXAC9IVRw" --max-usd 2',
           'Transcribe end to end, refusing if it would cost more than $2'
@@ -248,6 +260,15 @@ const parser = yargs(hideBin(process.argv))
         .option('content-type', {
           describe: 'Override the MIME type (must be on the API allowlist)',
           type: 'string',
+        })
+        .check((argv: any) => {
+          if (
+            argv.duration !== undefined &&
+            (!Number.isFinite(argv.duration) || argv.duration <= 0)
+          ) {
+            throw new Error('--duration must be a positive number of seconds');
+          }
+          return true;
         })
         .example('$0 upload ./interview.mp3', 'Upload an MP3 (duration via ffprobe)')
         .example('$0 upload ./talk.mp4 --duration 1922', 'Upload with explicit duration'),
