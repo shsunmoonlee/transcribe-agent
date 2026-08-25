@@ -55,4 +55,7 @@ Guide: https://transcribe.so/auth.md
 ## Related
 
 - Submit new jobs: see the `transcribe-audio` skill
+- CLI alternative for shell workflows (`transcribe-so result/subtitles/ask`):
+  `npm install -g transcribe-so`; see the root SKILL.md of
+  https://github.com/shsunmoonlee/transcribe-agent
 - REST shapes: https://transcribe.so/api/v1/openapi.yaml

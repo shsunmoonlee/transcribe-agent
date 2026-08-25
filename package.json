@@ -1,0 +1,66 @@
+{
+  "name": "transcribe-so",
+  "version": "0.1.0",
+  "description": "transcribe.so CLI for agents and scripts: transcribe YouTube videos, podcasts, media URLs, and local files into speaker-labelled transcripts with chapters, sections, cited Q&A, and subtitles. Pure-JSON stdout.",
+  "main": "dist/index.js",
+  "bin": {
+    "transcribe-so": "dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsup --watch",
+    "build": "tsup",
+    "start": "node ./dist/index.js",
+    "check:coverage": "npx -y tsx scripts/check-api-coverage.ts",
+    "prepublishOnly": "pnpm run build"
+  },
+  "files": [
+    "dist",
+    "examples",
+    "README.md",
+    "SKILL.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "transcription",
+    "speech-to-text",
+    "asr",
+    "subtitles",
+    "srt",
+    "vtt",
+    "youtube",
+    "podcast",
+    "diarization",
+    "speaker-labels",
+    "chapters",
+    "cli",
+    "ai-agent",
+    "transcribe"
+  ],
+  "author": {
+    "name": "transcribe.so",
+    "email": "support@transcribe.so",
+    "url": "https://transcribe.so"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shsunmoonlee/transcribe-agent.git"
+  },
+  "homepage": "https://transcribe.so/agent",
+  "bugs": {
+    "url": "https://github.com/shsunmoonlee/transcribe-agent/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "dependencies": {
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "@types/yargs": "^17.0.32",
+    "tsup": "^8.5.1",
+    "typescript": "^5.3.3"
+  }
+}
