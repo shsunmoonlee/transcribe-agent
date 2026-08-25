@@ -1,0 +1,22 @@
+{
+  "name": "transcribe-so",
+  "version": "1.0.0",
+  "description": "Transcribe audio and video (YouTube, podcasts, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips — via the transcribe.so remote MCP server.",
+  "author": {
+    "name": "transcribe.so",
+    "email": "support@transcribe.so",
+    "url": "https://transcribe.so"
+  },
+  "homepage": "https://transcribe.so/developers/docs#mcp",
+  "repository": "https://github.com/shsunmoonlee/transcribe-so-claude-plugin",
+  "license": "MIT",
+  "keywords": [
+    "transcription",
+    "speech-to-text",
+    "subtitles",
+    "youtube",
+    "podcast",
+    "diarization",
+    "mcp"
+  ]
+}
