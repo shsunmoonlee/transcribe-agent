@@ -46,7 +46,7 @@ Live Q&A uses a daily allowance, never the wallet. Details:
 
 This plugin sends the media URLs, uploaded files, and questions you provide
 to transcribe.so for processing. See the transcribe.so privacy policy at
-<https://transcribe.so/privacy> for data collection, usage, storage,
+<https://transcribe.so/privacy-policy> for data collection, usage, storage,
 retention, and contact information. No data is collected by the plugin
 itself beyond what the MCP tools transmit.
 
