@@ -19,9 +19,16 @@ same library everywhere.
   `_timed_out: true` = call again).
 - `search` — keyword search over titles and transcript text across the
   user's library; `fetch` — one transcription as plain text.
+- `searchSegments` — "who said X, and when": each hit is the SEGMENT, with its
+  own speaker label, `start_ms`/`end_ms` and a deep-link `url`. Speaker labels
+  are recording-local and `null` means unknown — never attribute a `null` line.
+- `getTranscript` — the COMPLETE transcript as a raw body (`txt` or `md`),
+  never capped. Use this for full text, not a windowed `segments` read.
 - `getTranscriptionTimestamps` — paste-ready chapter timestamps (formats:
   youtube, spotify, apple_podcasts, markdown, x, threads, instagram_caption,
-  plain; variants: standard, highlights, clips, quoted_sections, show_notes).
+  linkedin, plain; variants: standard, highlights, clips, quoted_sections,
+  show_notes, original). `cta` is opt-in and off by default. A 409
+  `artifact_missing` is fixed by ONE `regeneratePostingChapters` call.
 - `getTranscriptionWords` — paginated word-level timings in ms (limit up to
   2000/page; check `available` — `no_word_timestamps` means sentence-level
   only). For karaoke captions and overlays, not for reading.
@@ -55,7 +62,8 @@ Guide: https://transcribe.so/auth.md
 ## Related
 
 - Submit new jobs: see the `transcribe-audio` skill
-- CLI alternative for shell workflows (`transcribe-so result/subtitles/ask`):
+- CLI alternative for shell workflows
+  (`transcribe-so result/transcript/subtitles/captions/search/ask`):
   `npm install -g transcribe-so`; see the root SKILL.md of
   https://github.com/shsunmoonlee/transcribe-agent
 - REST shapes: https://transcribe.so/api/v1/openapi.yaml

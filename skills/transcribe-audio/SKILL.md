@@ -20,9 +20,14 @@ timestamped transcripts with automatic chapters, sections, and cited Q&A.
 
 ## Flow
 
-1. If the user wants the price first, call `getQuote` (no charge; transcription
-   is billed per minute from the account wallet — new accounts start with free
-   credit).
+1. Check the price before creating a job; stay within the user's authorized
+   budget; ask before exceeding it or starting another paid attempt. Call
+   `getQuote` first (no charge; transcription is billed per minute from the
+   account wallet — new accounts start with free credit). Pass
+   `max_charge_usd` to `transcribe` to make the ceiling binding server-side:
+   if the real charge is higher the call is refused with
+   `max_charge_exceeded` before any wallet hold, and nothing is started.
+   Report the refused price and ask; do not raise the ceiling yourself.
 2. Call `transcribe` with the source. It returns `id` immediately; jobs are
    asynchronous.
 3. For short recordings, long-poll with `waitForTranscription` (each call
@@ -47,7 +52,8 @@ https://transcribe.so/settings/api-keys sent as the Bearer token.
 ## Related
 
 - Retrieve results, subtitles, clips, Q&A: see the `get-transcript` skill
-- CLI alternative for shell workflows (pure-JSON stdout, budget-gated `run`):
+- CLI alternative for shell workflows (JSON stdout, budget-gated `run`,
+  `--max-charge-usd` server ceiling):
   `npm install -g transcribe-so`; see the root SKILL.md of
   https://github.com/shsunmoonlee/transcribe-agent
 - REST equivalent of everything here: https://transcribe.so/api/v1/openapi.yaml

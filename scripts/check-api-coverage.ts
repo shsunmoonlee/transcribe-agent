@@ -5,8 +5,13 @@
 
 const SPEC_URL = process.env.OPENAPI_URL || 'https://transcribe.so/openapi.json';
 
-// operationId -> CLI command (v0.1 surface).
+// operationId -> CLI command (v0.2 surface).
 const COVERED: Record<string, string> = {
+  getTranscript: 'transcript',
+  searchSegments: 'search',
+  searchTranscriptionSegments: 'search --id',
+  getTranscriptionTimestamps: 'captions',
+  regeneratePostingChapters: 'captions --regenerate',
   getMe: 'me',
   listPipelines: 'pipelines',
   createUpload: 'upload',
@@ -22,21 +27,19 @@ const COVERED: Record<string, string> = {
   askTranscription: 'ask',
 };
 
-// Deliberately NOT covered in v0.1. Each entry needs a reason; remove the
+// Deliberately NOT covered in v0.2. Each entry needs a reason; remove the
 // entry when the command ships so this gate starts enforcing it.
 const SKIPPED: Record<string, string> = {
-  createTusUpload: 'v0.2: resumable tus uploads (CLI caps presigned at 500 MB and points larger files at tus/web)',
-  getTranscriptionTimestamps: 'v0.2: timestamps:* command tail',
-  regeneratePostingChapters: 'v0.2: timestamps:* command tail',
-  getTranscriptionWords: 'v0.2: words command',
-  createClip: 'v0.2: clips:* commands',
-  listClips: 'v0.2: clips:* commands',
-  getClip: 'v0.2: clips:* commands',
-  askLibrary: 'v0.2: ask:library command',
-  getWebhook: 'v0.2: webhooks:get (API has one webhook per key, no list)',
-  createWebhook: 'v0.2: webhooks:*',
-  deleteWebhook: 'v0.2: webhooks:*',
-  testWebhook: 'v0.2: webhooks:*',
+  createTusUpload: 'v0.3: resumable tus uploads (CLI caps presigned at 500 MB and points larger files at tus/web)',
+  getTranscriptionWords: 'v0.3: words command',
+  createClip: 'v0.3: clips:* commands',
+  listClips: 'v0.3: clips:* commands',
+  getClip: 'v0.3: clips:* commands',
+  askLibrary: 'v0.3: ask:library command',
+  getWebhook: 'v0.3: webhooks:get (API has one webhook per key, no list)',
+  createWebhook: 'v0.3: webhooks:*',
+  deleteWebhook: 'v0.3: webhooks:*',
+  testWebhook: 'v0.3: webhooks:*',
   createRealtimeSession: 'internal beta: realtime sessions are not generally available',
   endRealtimeSession: 'internal beta: realtime sessions are not generally available',
   resumeRealtimeSession: 'internal beta: realtime sessions are not generally available',

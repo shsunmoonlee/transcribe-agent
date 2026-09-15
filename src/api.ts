@@ -1,4 +1,5 @@
 import { CliConfig, EXIT } from './config';
+import { notReadyRecovery } from './catalog';
 import { CLI_VERSION } from './version';
 
 export interface ApiResponse {
@@ -33,6 +34,12 @@ export class ApiError extends Error {
   get code(): string {
     return this.envelope?.error?.code ?? 'unknown_error';
   }
+
+  // Only set on 409 `not_ready` (transcript / timestamps). Decides whether
+  // waiting can possibly help.
+  get reason(): string | undefined {
+    return this.envelope?.error?.reason;
+  }
 }
 
 // Exit-code mapping: error.code FIRST, HTTP status second.
@@ -45,6 +52,11 @@ export function exitCodeFor(err: ApiError): number {
     case 'insufficient_funds':
     case 'spend_cap_exceeded':
       return EXIT.PAYMENT;
+    // Also a 402, but the opposite remedy: nothing was held or charged and
+    // the account is fine. Raising the ceiling is the user's call, never the
+    // agent's, so it gets its own code instead of reading as "top up".
+    case 'max_charge_exceeded':
+      return EXIT.MAX_CHARGE;
     case 'rate_limited':
     case 'internal_error':
       return EXIT.TRANSIENT;
@@ -81,8 +93,18 @@ export function handleFailure(err: unknown): never {
     }
     process.stderr.write(`${err.message}\n`);
     if (err.code === 'not_ready') {
+      // `reason` is the whole point of this envelope: only
+      // `transcription_processing` resolves by waiting.
       process.stderr.write(
-        'Hint: transcription not completed yet; run `transcribe-so wait <id>` first.\n'
+        `Hint: ${notReadyRecovery(err.reason, '<id>')}\n`
+      );
+    }
+    if (err.code === 'max_charge_exceeded') {
+      const charge = err.envelope?.error?.charge_usd;
+      const ceiling = err.envelope?.error?.max_charge_usd;
+      process.stderr.write(
+        `Hint: nothing was charged and no job started. The real charge is $${charge} against a ceiling of $${ceiling}. ` +
+          `Report the price and ask the user before raising --max-charge-usd; do not raise it on your own.\n`
       );
     }
     process.exit(exitCodeFor(err));
@@ -95,7 +117,7 @@ export function handleFailure(err: unknown): never {
   process.exit(EXIT.ERROR);
 }
 
-function sleep(ms: number): Promise<void> {
+export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -113,6 +135,10 @@ export class TranscribeAPI {
   constructor(config: CliConfig) {
     this.apiKey = config.apiKey;
     this.apiUrl = config.apiUrl;
+  }
+
+  get baseUrl(): string {
+    return this.apiUrl;
   }
 
   buildUrl(path: string, query?: RequestOptions['query']): string {

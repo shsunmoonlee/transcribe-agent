@@ -15,9 +15,15 @@ import {
   get,
   deleteTranscription,
   retry,
+  capabilities,
 } from './commands/core';
-import { subtitles, ask } from './commands/artifacts';
+import { subtitles, ask, transcript, captions, search } from './commands/artifacts';
 import { upload } from './commands/upload';
+import {
+  CAPTION_DESTINATION_NAMES,
+  CAPTION_VARIANTS,
+  TRANSCRIPT_FORMATS,
+} from './catalog';
 
 const INCLUDE_DESCRIBE =
   'Comma-separated result sections: chapters, acts, sections, qna, segments, posting_chapters, or all. Default chapters,sections,qna';
@@ -72,9 +78,46 @@ function sourceOptions(y: Argv): Argv {
     });
 }
 
+// Server-side charge ceiling. NOT the same thing as `run --max-usd`, which
+// is a local refusal decided from the free quote before anything is created.
+// This one travels with the request and is enforced at the wallet hold, so it
+// also covers a charge that moves between the quote and the hold.
+function maxChargeOption(y: Argv): Argv {
+  return y
+    .option('max-charge-usd', {
+      describe:
+        'Server-side charge ceiling in USD. The API refuses with 402 max_charge_exceeded (exit 7) before holding anything if the computed charge is higher. A plan-covered job charges $0 and passes any ceiling, including 0.',
+      type: 'number',
+    })
+    .check((argv: any) => {
+      if (
+        argv.maxChargeUsd !== undefined &&
+        (!Number.isFinite(argv.maxChargeUsd) || argv.maxChargeUsd < 0)
+      ) {
+        throw new Error('--max-charge-usd must be a finite number >= 0');
+      }
+      return true;
+    });
+}
+
+function segmentWindowOptions(y: Argv): Argv {
+  return y
+    .option('segments-offset', {
+      describe: 'First segment to return, 0-based (only with --include segments|all)',
+      type: 'number',
+    })
+    .option('segments-limit', {
+      describe:
+        'How many segments to return (1-1000). Read segments_meta.has_more; for the whole transcript use `transcript <id>`, which is never capped.',
+      type: 'number',
+    });
+}
+
 const parser = yargs(hideBin(process.argv))
   .scriptName('transcribe-so')
-  .usage('$0 <command> [options]\n\nPure-JSON stdout (subtitles excepted); progress goes to stderr.')
+  .usage(
+    '$0 <command> [options]\n\nPure-JSON stdout, except the three raw-output commands (subtitles, transcript,\ncaptions) which print a body you can pipe to a file; progress goes to stderr.'
+  )
   .option('allow-custom-host', {
     describe:
       'Allow sending the API key to a non-default TRANSCRIBE_API_URL host (refused otherwise)',
@@ -120,7 +163,11 @@ const parser = yargs(hideBin(process.argv))
     'create',
     'Submit a transcription (charges the wallet; prints the 202 body)',
     (y: Argv) =>
-      sourceOptions(y)
+      maxChargeOption(sourceOptions(y))
+        .example(
+          '$0 create --source youtube --url "https://youtu.be/x" --max-charge-usd 2',
+          'Refuse server-side (exit 7) if the charge would exceed $2'
+        )
         .example(
           '$0 create --source youtube --url "https://youtu.be/jNQXAC9IVRw"',
           'Transcribe a YouTube video'
@@ -135,7 +182,7 @@ const parser = yargs(hideBin(process.argv))
     'wait <id>',
     'Long-poll until the transcription completes or fails (server-side windows)',
     (y: Argv) =>
-      y
+      segmentWindowOptions(y)
         .positional('id', { describe: 'Transcription id from the create 202', type: 'number' })
         .option('timeout', {
           describe: 'Overall seconds to keep waiting',
@@ -151,18 +198,28 @@ const parser = yargs(hideBin(process.argv))
     'result <id>',
     'Fetch the result of a completed transcription',
     (y: Argv) =>
-      y
+      segmentWindowOptions(y)
         .positional('id', { describe: 'Transcription id', type: 'number' })
         .option('include', { describe: INCLUDE_DESCRIBE, type: 'string' })
         .example('$0 result 4821', 'Chapters, sections and Q&A')
-        .example('$0 result 4821 --include segments | jq -r \'.segments[].text\'', 'Full verbatim text'),
+        .example('$0 result 4821 --include segments | jq -r \'.segments[].text\'', 'One window of verbatim text')
+        .example(
+          '$0 result 4821 --include segments --segments-offset 1000 --segments-limit 1000',
+          'The next window (see segments_meta)'
+        ),
     result as any
   )
   .command(
     'run',
     'quote, then create, wait, and fetch the result in one command (requires --max-usd)',
     (y: Argv) =>
-      sourceOptions(y)
+      maxChargeOption(sourceOptions(y))
+        .option('server-ceiling', {
+          describe:
+            'Also send --max-usd (or --max-charge-usd) to the API as max_charge_usd, so the ceiling is enforced at the wallet hold too. Default true; --no-server-ceiling opts out.',
+          type: 'boolean',
+          default: true,
+        })
         .option('max-usd', {
           describe:
             'Hard budget: refuse (exit 6) if the quote exceeds this many USD. Required; there is no default.',
@@ -229,7 +286,7 @@ const parser = yargs(hideBin(process.argv))
     'retry <id>',
     'Retry a failed transcription (charges again from scratch)',
     (y: Argv) =>
-      y
+      maxChargeOption(y)
         .positional('id', { describe: 'Transcription id', type: 'number' })
         .option('yes', {
           describe: 'Required confirmation flag; retry re-charges the wallet from scratch',
@@ -244,7 +301,7 @@ const parser = yargs(hideBin(process.argv))
           if (!argv.yes) throw new Error('retry re-charges from scratch; re-run with --yes to confirm');
           return true;
         })
-        .example('$0 retry 4821 --yes', 'Re-run failed job 4821'),
+        .example('$0 retry 4821 --yes --max-charge-usd 2', 'Re-run failed job 4821, capped at $2'),
     retry as any
   )
   .command(
@@ -276,7 +333,7 @@ const parser = yargs(hideBin(process.argv))
   )
   .command(
     'subtitles <id>',
-    'Print the raw subtitle file (SRT/VTT/JSON) to stdout - the one non-JSON command',
+    'Print the raw subtitle file (SRT/VTT/JSON) to stdout - a raw-output command',
     (y: Argv) =>
       y
         .positional('id', { describe: 'Transcription id', type: 'number' })
@@ -304,6 +361,109 @@ const parser = yargs(hideBin(process.argv))
         .example('$0 subtitles 4821 > talk.srt', 'Save the SRT')
         .example('$0 subtitles 4821 --format vtt --preset tiktok-shorts > talk.vtt', 'Vertical-video VTT'),
     subtitles as any
+  )
+  .command(
+    'transcript <id>',
+    'Print the COMPLETE transcript as raw text or Markdown (never capped) - a raw-output command',
+    (y: Argv) =>
+      y
+        .positional('id', { describe: 'Transcription id', type: 'number' })
+        .option('format', {
+          describe: 'txt (transcript only) or md (title + chapter list + turns)',
+          type: 'string',
+          choices: [...TRANSCRIPT_FORMATS],
+          default: 'txt',
+        })
+        .option('speaker-labels', {
+          describe: 'Prefix each turn with its speaker label (default true; --no-speaker-labels to drop)',
+          type: 'boolean',
+          default: true,
+        })
+        .option('timestamps', {
+          describe: 'Prefix each turn with its clock time (default true; --no-timestamps to drop)',
+          type: 'boolean',
+          default: true,
+        })
+        .option('out', { describe: 'Write to this file instead of stdout', type: 'string' })
+        .option('wait-seconds', {
+          describe:
+            'If the job is still processing (409 not_ready reason=transcription_processing), keep retrying on Retry-After for up to this many seconds. Default 0 = fail immediately. Every other not_ready reason exits non-zero without waiting.',
+          type: 'number',
+          default: 0,
+        })
+        .check((argv: any) => {
+          if (!Number.isFinite(argv.waitSeconds) || argv.waitSeconds < 0) {
+            throw new Error('--wait-seconds must be a finite number >= 0');
+          }
+          return true;
+        })
+        .example('$0 transcript 4821 > talk.txt', 'Whole transcript as text')
+        .example('$0 transcript 4821 --format md --out talk.md', 'Timestamped Markdown export')
+        .example('$0 transcript 4821 --no-timestamps --no-speaker-labels', 'Prose only'),
+    transcript as any
+  )
+  .command(
+    'captions <id>',
+    'Paste-ready captions/timestamps for one destination - prints the text raw (--json for the envelope)',
+    (y: Argv) =>
+      y
+        .positional('id', { describe: 'Transcription id', type: 'number' })
+        .option('for', {
+          describe: 'Destination platform',
+          type: 'string',
+          choices: CAPTION_DESTINATION_NAMES,
+          default: 'youtube',
+        })
+        .option('variant', {
+          describe:
+            'Content: standard (chapter list), highlights (5-item text outline), clips (3 video ideas), quoted_sections (verbatim quotes), show_notes, original',
+          type: 'string',
+          choices: [...CAPTION_VARIANTS],
+          default: 'standard',
+        })
+        .option('cta', {
+          describe: 'Append the transcribe.so CTA footer (quoted_sections only). Off by default: the caption belongs to the user.',
+          type: 'boolean',
+          default: false,
+        })
+        .option('json', {
+          describe: 'Print the full JSON envelope (warnings, ok_to_paste, thread[], constraints) instead of the raw text',
+          type: 'boolean',
+          default: false,
+        })
+        .option('regenerate', {
+          describe:
+            'On 409 not_ready reason=artifact_missing, POST /timestamps/regenerate ONCE (30-90s) and retry. Without it the command prints the recovery and exits non-zero.',
+          type: 'boolean',
+          default: false,
+        })
+        .example('$0 captions 4821 --for instagram --variant highlights', 'IG caption outline')
+        .example('$0 captions 4821 --for youtube > chapters.txt', 'YouTube chapter list')
+        .example('$0 captions 4821 --for x --variant quoted_sections --json | jq -r \'.thread[]\'', 'Pre-split X thread'),
+    captions as any
+  )
+  .command(
+    'search <q>',
+    'Search transcript segments ("who said X, and when") across the library or one transcription',
+    (y: Argv) =>
+      y
+        .positional('q', { describe: 'Search terms (2-200 chars, case-insensitive substring)', type: 'string' })
+        .option('id', {
+          describe: 'Restrict to one transcription id (404s if it is not yours)',
+          type: 'number',
+        })
+        .option('limit', { describe: 'Hits per page, 1-100 (default 20)', type: 'number' })
+        .option('offset', { describe: '0-based offset, max 1000', type: 'number' })
+        .example('$0 search "pricing" | jq -r \'.hits[] | "\\(.speaker): \\(.text)"\'', 'Who said it')
+        .example('$0 search "pricing" --id 4821', 'Within one transcription'),
+    search as any
+  )
+  .command(
+    'capabilities',
+    'One JSON object: this account (/me), the pipeline catalog (/pipelines), every format enum this CLI accepts, and the exit codes',
+    (y: Argv) =>
+      y.example('$0 capabilities | jq .formats.captions.destinations', 'Valid `captions --for` values'),
+    capabilities as any
   )
   .command(
     'ask <id>',
