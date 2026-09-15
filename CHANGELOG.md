@@ -23,7 +23,12 @@ Targets transcribe.so API 1.1.0.
   caption belongs to the user). Prints the text raw; `--json` prints the full
   envelope (`warnings`, `ok_to_paste`, `thread[]`, `constraints`). On
   `artifact_missing` it prints the exact recovery, and `--regenerate` runs
-  that one `POST /timestamps/regenerate` for you and retries.
+  that one `POST /timestamps/regenerate` for you and retries. `--regenerate`
+  is not side-effect free: it regenerates and REPLACES all four cached
+  caption/chapter variants and burns 1 of the 10 regenerations allowed per
+  transcription. Once those are gone the API answers 429 `rate_limited` with
+  no `Retry-After`, which the CLI maps to exit 1 (not the transient exit 5),
+  because only a re-transcribe resets the count.
 - **`search <q> [--id <id>] [--limit N] [--offset N]`** — "who said X, and
   when" across the library, or scoped to one transcription. Hits carry
   `speaker`, `start_ms`, `end_ms` and a deep-link `url`.

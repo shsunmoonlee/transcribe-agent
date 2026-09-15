@@ -433,7 +433,7 @@ const parser = yargs(hideBin(process.argv))
         })
         .option('regenerate', {
           describe:
-            'On 409 not_ready reason=artifact_missing, POST /timestamps/regenerate ONCE (30-90s) and retry. Without it the command prints the recovery and exits non-zero.',
+            'On 409 not_ready reason=artifact_missing, POST /timestamps/regenerate ONCE (30-90s) and retry. Without it the command prints the recovery and exits non-zero. Not free of side effects: it regenerates and REPLACES all four cached caption/chapter variants and burns 1 of the 10 regenerations allowed per transcription.',
           type: 'boolean',
           default: false,
         })
@@ -454,6 +454,24 @@ const parser = yargs(hideBin(process.argv))
         })
         .option('limit', { describe: 'Hits per page, 1-100 (default 20)', type: 'number' })
         .option('offset', { describe: '0-based offset, max 1000', type: 'number' })
+        // Mirrors the server contract so a bad call fails locally (exit 2)
+        // instead of spending a round-trip on a 400.
+        .check((argv: any) => {
+          if (typeof argv.q !== 'string' || argv.q.length < 2) {
+            throw new Error('<q> must be at least 2 characters');
+          }
+          if (argv.limit !== undefined) {
+            if (!Number.isInteger(argv.limit) || argv.limit < 1 || argv.limit > 100) {
+              throw new Error('--limit must be an integer between 1 and 100');
+            }
+          }
+          if (argv.offset !== undefined) {
+            if (!Number.isInteger(argv.offset) || argv.offset < 0 || argv.offset > 1000) {
+              throw new Error('--offset must be an integer between 0 and 1000');
+            }
+          }
+          return true;
+        })
         .example('$0 search "pricing" | jq -r \'.hits[] | "\\(.speaker): \\(.text)"\'', 'Who said it')
         .example('$0 search "pricing" --id 4821', 'Within one transcription'),
     search as any

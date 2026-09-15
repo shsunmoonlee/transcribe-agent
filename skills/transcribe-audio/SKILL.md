@@ -20,7 +20,7 @@ timestamped transcripts with automatic chapters, sections, and cited Q&A.
 
 ## Flow
 
-1. Check the price before creating a job; stay within the user's authorized
+1. Check the price before creating a job. Stay within the user's authorized
    budget; ask before exceeding it or starting another paid attempt. Call
    `getQuote` first (no charge; transcription is billed per minute from the
    account wallet — new accounts start with free credit). Pass

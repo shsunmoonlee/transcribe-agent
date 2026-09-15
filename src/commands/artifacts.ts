@@ -32,7 +32,7 @@ export async function subtitles(argv: any): Promise<void> {
     );
     writeRaw(raw);
   } catch (err) {
-    handleFailure(err);
+    handleFailure(err, { id: argv.id });
   }
 }
 
@@ -66,12 +66,12 @@ export async function transcript(argv: any): Promise<void> {
       }
       return;
     } catch (err) {
-      if (!(err instanceof ApiError) || err.code !== 'not_ready') handleFailure(err);
+      if (!(err instanceof ApiError) || err.code !== 'not_ready') handleFailure(err, { id: argv.id });
       const apiErr = err as ApiError;
       const remainingMs = deadline - Date.now();
       if (!isWaitableNotReady(apiErr.reason) || remainingMs <= 0) {
         // Non-waitable reason, or --wait-seconds exhausted (default 0).
-        handleFailure(apiErr);
+        handleFailure(apiErr, { id: argv.id });
       }
       // Retry-After is only set for `transcription_processing`; 15s is the
       // server's documented value and the fallback if the header is missing.
@@ -98,7 +98,7 @@ export async function captions(argv: any): Promise<void> {
   try {
     format = captionFormatFor(argv.for);
   } catch (err) {
-    handleFailure(err);
+    handleFailure(err, { id: argv.id });
   }
 
   const query = {
@@ -141,7 +141,7 @@ export async function captions(argv: any): Promise<void> {
       emit(res.json, res.rawText);
       return;
     } catch (err) {
-      if (!(err instanceof ApiError) || err.code !== 'not_ready') handleFailure(err);
+      if (!(err instanceof ApiError) || err.code !== 'not_ready') handleFailure(err, { id: argv.id });
       const apiErr = err as ApiError;
       if (apiErr.reason === 'artifact_missing' && argv.regenerate && !regenerated) {
         regenerated = true;
@@ -153,7 +153,7 @@ export async function captions(argv: any): Promise<void> {
             method: 'POST',
           });
         } catch (regenErr) {
-          handleFailure(regenErr);
+          handleFailure(regenErr, { id: argv.id });
         }
         continue;
       }
@@ -165,7 +165,9 @@ export async function captions(argv: any): Promise<void> {
       } else {
         process.stderr.write(`Recovery: ${notReadyRecovery(apiErr.reason, argv.id)}\n`);
       }
-      handleFailure(apiErr);
+      // Both branches above already printed a Recovery line; the generic
+      // not_ready hint would only repeat it.
+      handleFailure(apiErr, { id: argv.id, suppressNotReadyHint: true });
     }
   }
 }
@@ -188,7 +190,7 @@ export async function search(argv: any): Promise<void> {
       );
     }
   } catch (err) {
-    handleFailure(err);
+    handleFailure(err, { id: argv.id });
   }
 }
 
@@ -202,6 +204,6 @@ export async function ask(argv: any): Promise<void> {
     });
     writeRaw(res.rawText);
   } catch (err) {
-    handleFailure(err);
+    handleFailure(err, { id: argv.id });
   }
 }

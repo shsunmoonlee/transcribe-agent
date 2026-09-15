@@ -29,7 +29,7 @@ official website: https://transcribe.so
 
 ## Hard Rules (Read First)
 
-**Rule 0 - Money.** Check the price before creating a job; stay within the user's authorized budget; ask before exceeding it or starting another paid attempt. `quote` is free and tells you the price. `--max-charge-usd` makes the ceiling binding server-side. After a refusal, report the real price and ask - never raise a ceiling on your own, and never re-run `retry` to "see if it works".
+**Rule 0 - Money.** Check the price before creating a job. Stay within the user's authorized budget; ask before exceeding it or starting another paid attempt. `quote` is free and tells you the price. `--max-charge-usd` makes the ceiling binding server-side. After a refusal, report the real price and ask - never raise a ceiling on your own, and never re-run `retry` to "see if it works".
 
 **Rule 1 - Quote before create.** `quote` is free; `create` charges the wallet. Show the user the price for anything non-trivial. The quote's `transcription_id` is NOT the job id - never pass it to `wait` or `result`. Only the id in the `create` (or `run`) 202 response is the job.
 
@@ -162,7 +162,7 @@ transcribe-so captions "$ID" --for linkedin                      # one 3,000-cha
 transcribe-so captions "$ID" --for x --variant quoted_sections --json | jq -r '.thread[]'
 ```
 
-Destinations: `instagram` (maps to the API's `instagram_caption`), `x`, `threads`, `linkedin`, `youtube`, `spotify`, `apple_podcasts`, `markdown`, `plain`. Variants: `standard` (chapter list), `highlights` (5-item text outline), `clips` (3 video ideas), `quoted_sections` (verbatim pull quotes), `show_notes`, `original`. `--cta` adds the transcribe.so footer and is OFF by default - the caption belongs to the user. Warnings print on stderr; surface them, because a silently shortened quote is a misquote. `artifact_missing` -> re-run with `--regenerate` (one 30-90s regeneration, then it retries).
+Destinations: `instagram` (maps to the API's `instagram_caption`), `x`, `threads`, `linkedin`, `youtube`, `spotify`, `apple_podcasts`, `markdown`, `plain`. Variants: `standard` (chapter list), `highlights` (5-item text outline), `clips` (3 video ideas), `quoted_sections` (verbatim pull quotes), `show_notes`, `original`. `--cta` adds the transcribe.so footer and is OFF by default - the caption belongs to the user. Warnings print on stderr; surface them, because a silently shortened quote is a misquote. `artifact_missing` -> re-run with `--regenerate` (one 30-90s regeneration, then it retries); it regenerates and REPLACES all four cached caption/chapter variants and burns 1 of the 10 regenerations allowed per transcription, and once they are gone only a re-transcribe resets the count.
 
 **5. "Subtitles for this video."**
 

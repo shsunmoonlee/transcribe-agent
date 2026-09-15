@@ -95,6 +95,19 @@ test('insufficient_funds still maps to payment (exit 4)', () => {
   assert.strictEqual(exitCodeFor(new ApiError(402, envelope('insufficient_funds'), null)), EXIT.PAYMENT);
 });
 
+test('rate_limited WITH a Retry-After stays transient (exit 5)', () => {
+  const err = new ApiError(429, envelope('rate_limited', { message: 'slow down' }), 30);
+  assert.strictEqual(exitCodeFor(err), EXIT.TRANSIENT);
+});
+
+test('rate_limited with NO Retry-After is a plain error (exit 1), not a retry loop', () => {
+  // The regeneration cap: "Regeneration limit reached (10). Re-transcribe to
+  // reset." 429, no Retry-After, and it never frees up on its own.
+  const err = new ApiError(429, envelope('rate_limited'), null);
+  assert.strictEqual(exitCodeFor(err), EXIT.ERROR);
+  assert.notStrictEqual(exitCodeFor(err), EXIT.TRANSIENT);
+});
+
 test('ApiError exposes the not_ready reason', () => {
   const err = new ApiError(409, envelope('not_ready', { reason: 'artifact_missing' }), null);
   assert.strictEqual(err.reason, 'artifact_missing');
