@@ -50,6 +50,12 @@ Targets transcribe.so API 1.1.0.
 - Examples: [`examples/ig-caption.sh`](examples/ig-caption.sh),
   [`examples/who-said-what.sh`](examples/who-said-what.sh).
 - `pnpm run test` — unit tests for the mapping/parsing helpers.
+- Multi-runtime manifests so the same repo installs outside Claude Code:
+  `.cursor-plugin/plugin.json` (Cursor plugin: both skills plus the hosted MCP
+  server) and `gemini-extension.json` (Gemini CLI extension bundling
+  `https://transcribe.so/mcp`). The README Install section now leads with
+  per-runtime instructions for Claude Code, Codex, Cursor, Gemini CLI, ChatGPT,
+  and any skills.sh agent.
 
 ### Changed
 

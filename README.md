@@ -12,6 +12,9 @@ LinkedIn, YouTube, Spotify and Apple Podcasts.
 
 ## Install
 
+Keep a human in the loop: every paid call takes a max_charge_usd ceiling, and a
+free quote comes first.
+
 ### 1. Agent skill (Claude Code, OpenClaw, any skills.sh-compatible agent)
 
 ```bash
@@ -41,6 +44,48 @@ npm install -g transcribe-so     # or: pnpm install -g transcribe-so
 export TRANSCRIBE_API_KEY=tsk_live_...   # https://transcribe.so/settings/api-keys
 transcribe-so me
 ```
+
+### Codex
+
+```bash
+codex mcp add transcribe --url https://transcribe.so/mcp
+```
+
+Codex opens the OAuth flow on the first tool call.
+
+### Cursor
+
+From the marketplace or the Customize panel: find `transcribe-so` and click
+Install. Or add it to `.cursor/mcp.json` by hand:
+
+```json
+{"mcpServers":{"transcribe":{"url":"https://transcribe.so/mcp"}}}
+```
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/shsunmoonlee/transcribe-agent
+```
+
+The extension ships [gemini-extension.json](gemini-extension.json), which
+points Gemini CLI at the hosted MCP server. It opens a browser to sign in on
+first use.
+
+### ChatGPT
+
+Settings, Connectors, Developer mode, then add `https://transcribe.so/mcp`.
+Or use the public Custom GPT linked from https://transcribe.so/agent, which
+needs no setup.
+
+### OpenClaw and any skills.sh agent
+
+```bash
+npx skills add shsunmoonlee/transcribe-agent
+```
+
+Same command as entry 1 above: the skill is runtime-agnostic and teaches the
+CLI workflow, hard rules, and exit codes.
 
 ## CLI in 30 seconds
 
