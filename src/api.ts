@@ -1,4 +1,5 @@
 import { CliConfig, EXIT } from './config';
+import { notReadyRecovery } from './catalog';
 import { CLI_VERSION } from './version';
 
 export interface ApiResponse {
@@ -33,6 +34,19 @@ export class ApiError extends Error {
   get code(): string {
     return this.envelope?.error?.code ?? 'unknown_error';
   }
+
+  // Only set on 409 `not_ready` (transcript / timestamps). Decides whether
+  // waiting can possibly help.
+  get reason(): string | undefined {
+    return this.envelope?.error?.reason;
+  }
+}
+
+// `rate_limited` with no finite Retry-After is permanent on a CLI timescale:
+// nothing the agent can do makes the same call succeed later.
+export function isPermanentRateLimit(err: ApiError): boolean {
+  if (err.code !== 'rate_limited') return false;
+  return !(err.retryAfterSeconds !== null && Number.isFinite(err.retryAfterSeconds));
 }
 
 // Exit-code mapping: error.code FIRST, HTTP status second.
@@ -45,7 +59,18 @@ export function exitCodeFor(err: ApiError): number {
     case 'insufficient_funds':
     case 'spend_cap_exceeded':
       return EXIT.PAYMENT;
+    // Also a 402, but the opposite remedy: nothing was held or charged and
+    // the account is fine. Raising the ceiling is the user's call, never the
+    // agent's, so it gets its own code instead of reading as "top up".
+    case 'max_charge_exceeded':
+      return EXIT.MAX_CHARGE;
+    // A 429 with a Retry-After is a real throttle: wait it out. Without one it
+    // is an exhausted allowance that never refills on its own - the
+    // regeneration cap ("Regeneration limit reached (10). Re-transcribe to
+    // reset.") is the live example - so it gets the plain error code and
+    // agents stop looping.
     case 'rate_limited':
+      return isPermanentRateLimit(err) ? EXIT.ERROR : EXIT.TRANSIENT;
     case 'internal_error':
       return EXIT.TRANSIENT;
     // Not transient on a CLI timescale: the daily Q&A allowance frees up in
@@ -62,7 +87,16 @@ export function exitCodeFor(err: ApiError): number {
 // Print the API error envelope to stdout VERBATIM, a human line to stderr,
 // then exit with the mapped code. Non-ApiError failures (network, bugs) get
 // a synthesized envelope and exit 1.
-export function handleFailure(err: unknown): never {
+export interface FailureContext {
+  // The transcription id the failing call was about, so recovery lines can
+  // name a real command instead of a placeholder.
+  id?: number | string;
+  // Set by callers that already printed their own, more specific Recovery
+  // line; without it the generic not_ready hint prints the same advice twice.
+  suppressNotReadyHint?: boolean;
+}
+
+export function handleFailure(err: unknown, ctx: FailureContext = {}): never {
   if (err instanceof ApiError) {
     if (err.envelope !== null) {
       process.stdout.write(err.rawText.endsWith('\n') ? err.rawText : err.rawText + '\n');
@@ -80,9 +114,27 @@ export function handleFailure(err: unknown): never {
       );
     }
     process.stderr.write(`${err.message}\n`);
-    if (err.code === 'not_ready') {
+    if (err.code === 'not_ready' && !ctx.suppressNotReadyHint) {
+      // `reason` is the whole point of this envelope: only
+      // `transcription_processing` resolves by waiting.
       process.stderr.write(
-        'Hint: transcription not completed yet; run `transcribe-so wait <id>` first.\n'
+        `Hint: ${notReadyRecovery(err.reason, ctx.id ?? '<id>')}\n`
+      );
+    }
+    if (isPermanentRateLimit(err)) {
+      process.stderr.write(
+        'Hint: this allowance does not refill on a CLI timescale (no Retry-After was sent). ' +
+          'Re-transcribe to reset; retrying will not help.\n'
+      );
+    }
+    if (err.code === 'max_charge_exceeded') {
+      const charge = err.envelope?.error?.charge_usd;
+      // The envelope does not always echo the ceiling back; `$undefined` read
+      // as a real number to agents.
+      const ceiling = err.envelope?.error?.max_charge_usd ?? 'not sent';
+      process.stderr.write(
+        `Hint: nothing was charged and no job started. The real charge is $${charge} against a ceiling of $${ceiling}. ` +
+          `Report the price and ask the user before raising --max-charge-usd; do not raise it on your own.\n`
       );
     }
     process.exit(exitCodeFor(err));
@@ -95,7 +147,7 @@ export function handleFailure(err: unknown): never {
   process.exit(EXIT.ERROR);
 }
 
-function sleep(ms: number): Promise<void> {
+export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -113,6 +165,10 @@ export class TranscribeAPI {
   constructor(config: CliConfig) {
     this.apiKey = config.apiKey;
     this.apiUrl = config.apiUrl;
+  }
+
+  get baseUrl(): string {
+    return this.apiUrl;
   }
 
   buildUrl(path: string, query?: RequestOptions['query']): string {

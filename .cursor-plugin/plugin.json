@@ -22,5 +22,12 @@
   "skills": [
     "./skills/transcribe-audio",
     "./skills/get-transcript"
-  ]
+  ],
+  "mcpServers": {
+    "transcribe-so": {
+      "type": "http",
+      "url": "https://transcribe.so/mcp",
+      "note": "Official transcribe.so MCP server (hosted, streamable HTTP). OAuth on first connection, or a tsk_live_* API key as a Bearer token."
+    }
+  }
 }

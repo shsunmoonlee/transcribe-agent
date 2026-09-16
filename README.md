@@ -6,9 +6,14 @@ plugin bundling the transcribe.so remote MCP server.
 
 transcribe.so turns YouTube videos, podcasts, direct media URLs, and local
 files into speaker-labelled transcripts with timestamped segments, chapters,
-sections, cited Q&A, and subtitle files (SRT, VTT, karaoke VTT).
+sections, cited Q&A, subtitle files (SRT, VTT, karaoke VTT), full transcript
+exports, segment search, and paste-ready captions for Instagram, X, Threads,
+LinkedIn, YouTube, Spotify and Apple Podcasts.
 
 ## Install
+
+Keep a human in the loop: every paid call takes a max_charge_usd ceiling, and a
+free quote comes first.
 
 ### 1. Agent skill (Claude Code, OpenClaw, any skills.sh-compatible agent)
 
@@ -40,6 +45,48 @@ export TRANSCRIBE_API_KEY=tsk_live_...   # https://transcribe.so/settings/api-ke
 transcribe-so me
 ```
 
+### Codex
+
+```bash
+codex mcp add transcribe --url https://transcribe.so/mcp
+```
+
+Codex opens the OAuth flow on the first tool call.
+
+### Cursor
+
+From the marketplace or the Customize panel: find `transcribe-so` and click
+Install. Or add it to `.cursor/mcp.json` by hand:
+
+```json
+{"mcpServers":{"transcribe":{"url":"https://transcribe.so/mcp"}}}
+```
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/shsunmoonlee/transcribe-agent
+```
+
+The extension ships [gemini-extension.json](gemini-extension.json), which
+points Gemini CLI at the hosted MCP server. It opens a browser to sign in on
+first use.
+
+### ChatGPT
+
+Settings, Connectors, Developer mode, then add `https://transcribe.so/mcp`.
+Or use the public Custom GPT linked from https://transcribe.so/agent, which
+needs no setup.
+
+### OpenClaw and any skills.sh agent
+
+```bash
+npx skills add shsunmoonlee/transcribe-agent
+```
+
+Same command as entry 1 above: the skill is runtime-agnostic and teaches the
+CLI workflow, hard rules, and exit codes.
+
 ## CLI in 30 seconds
 
 ```bash
@@ -53,23 +100,61 @@ transcribe-so run --source upload --upload-id <id> --duration <s> --max-usd 5
 
 # Artifacts
 transcribe-so result <id> | jq '.chapters[]'
+transcribe-so transcript <id> > out.txt                      # the whole transcript, never capped
 transcribe-so subtitles <id> --format srt > out.srt
+transcribe-so captions <id> --for instagram --variant highlights
+transcribe-so search "pricing" | jq -r '.hits[] | "\(.speaker): \(.text)"'
 transcribe-so ask <id> -q "What did the guest say about pricing?"
 ```
 
+## Commands
+
+| Command | What it does |
+|---------|--------------|
+| `auth:status` | Is `TRANSCRIBE_API_KEY` valid? |
+| `me` | Account, wallet balance, plan limits, API-key scopes and spend |
+| `capabilities` | One JSON object: account + pipeline catalog + every format enum + exit codes |
+| `pipelines` | Per-minute pricing and supported languages |
+| `quote` | Free price preview (does not queue anything) |
+| `create` | Submit a job. `--max-charge-usd <n>` caps the charge server-side |
+| `run` | quote → budget gate → create → wait → result, in one command |
+| `wait <id>` | Long-poll to a terminal status |
+| `result <id>` | Chapters, sections, Q&A (`--include`, `--segments-offset`, `--segments-limit`) |
+| `transcript <id>` | **Raw**: the complete transcript, `txt` or `md`, never capped |
+| `subtitles <id>` | **Raw**: SRT / VTT / karaoke VTT / JSON |
+| `captions <id> --for <dest>` | **Raw**: paste-ready caption or chapter timestamps per platform |
+| `search <q>` | "Who said X, and when", library-wide or `--id`-scoped |
+| `ask <id> -q "..."` | Cited Q&A (daily allowance, never the wallet) |
+| `list` / `get <id>` | Browse jobs; status/stage/progress snapshot |
+| `upload <file>` | Presigned PUT for a local file; prints `upload_id` |
+| `retry <id> --yes` | New paid attempt (pass `--max-charge-usd` again) |
+| `delete <id> --yes` | Irreversible |
+
 Design contract, made for agents:
 
-- stdout is pure JSON (the one exception: `subtitles` prints the raw subtitle
-  body). All progress goes to stderr, so `| jq .` always works.
+- stdout is JSON everywhere except the three raw-output commands —
+  `subtitles`, `transcript`, and `captions` (without `--json`) — which print a
+  body you can pipe to a file. Errors are always the JSON envelope. All
+  progress goes to stderr, so `| jq .` always works.
 - Exit codes are meaningful: 0 ok, 1 API error, 2 usage, 3 auth, 4 payment,
-  5 transient, 6 local `--max-usd` budget refusal.
-- `create`/`run`/`quote` always send an `Idempotency-Key`; retries are safe.
-- `run` refuses to spend more than `--max-usd` (required, no default).
+  5 transient, 6 local `--max-usd` budget refusal, 7 server-side
+  `max_charge_exceeded` (nothing charged, no job started).
+- Two budgets, both explicit: `run --max-usd` refuses locally from the free
+  quote; `--max-charge-usd` is sent to the API and enforced at the wallet
+  hold. `run` sends its `--max-usd` as the server ceiling too unless you pass
+  `--no-server-ceiling`.
+- `create`/`run`/`quote`/`retry` always send an `Idempotency-Key`. Pass
+  `--idempotency-key` explicitly to make a retry safe across processes — the
+  auto-generated one is per invocation, so re-running a command is a second
+  key and a second charge.
+- A 409 `not_ready` is acted on by its `reason`: only
+  `transcription_processing` is ever retried.
 - The CLI refuses to send your API key to a non-default host unless you pass
   `--allow-custom-host`.
 
-Full command reference and workflow rules: [SKILL.md](SKILL.md). Worked
-examples: [examples/](examples/).
+Full command reference and workflow rules: [SKILL.md](SKILL.md). Release
+notes: [CHANGELOG.md](CHANGELOG.md). Worked examples:
+[examples/](examples/).
 
 ## Pricing
 

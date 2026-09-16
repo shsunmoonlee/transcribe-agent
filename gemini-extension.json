@@ -1,0 +1,11 @@
+{
+  "name": "transcribe-so",
+  "version": "1.2.0",
+  "description": "Transcribe audio and video (YouTube, podcasts, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips — via the transcribe.so remote MCP server.",
+  "mcpServers": {
+    "transcribe-so": {
+      "httpUrl": "https://transcribe.so/mcp",
+      "description": "Official transcribe.so MCP server (hosted, streamable HTTP). Gemini CLI opens a browser to sign in on first use."
+    }
+  }
+}

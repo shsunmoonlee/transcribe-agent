@@ -8,6 +8,11 @@ export const EXIT = {
   PAYMENT: 4,
   TRANSIENT: 5,
   BUDGET: 6,
+  // Server-side ceiling: the API refused with 402 `max_charge_exceeded`
+  // because `max_charge_usd` was below the computed charge. Distinct from
+  // 4 (the account cannot pay) and from 6 (the CLI's own local `--max-usd`
+  // refusal, decided before any request that could charge).
+  MAX_CHARGE: 7,
 } as const;
 
 export interface CliConfig {
