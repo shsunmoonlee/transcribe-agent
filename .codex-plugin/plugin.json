@@ -1,0 +1,49 @@
+{
+  "name": "transcribe-so",
+  "version": "1.3.0",
+  "description": "Transcribe audio and video (YouTube, podcasts, meetings, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips.",
+  "author": {
+    "name": "transcribe.so",
+    "email": "support@transcribe.so",
+    "url": "https://transcribe.so"
+  },
+  "homepage": "https://transcribe.so/agent",
+  "repository": "https://github.com/shsunmoonlee/transcribe-agent",
+  "license": "MIT",
+  "keywords": [
+    "transcription",
+    "speech-to-text",
+    "subtitles",
+    "captions",
+    "youtube",
+    "podcast",
+    "meetings",
+    "diarization",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "transcribe.so",
+    "developerName": "transcribe.so",
+    "shortDescription": "Find who said what, and exactly when, in any video, podcast or meeting",
+    "longDescription": "Transcribe YouTube videos, podcasts, meetings and uploaded files into speaker-labelled, timestamped transcripts. Search across transcripts for who said what and jump to the moment, ask cited questions, and export chapters, subtitles, social captions and captioned clips. Quotes are free; your agent shows the price and waits for your approval before starting a paid job.",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Transcribe this YouTube video and list the chapters with timestamps",
+      "Find who said what about pricing in my transcripts, with timestamps",
+      "Write Instagram captions for my latest episode"
+    ],
+    "brandColor": "#111111",
+    "composerIcon": "./assets/logo-400.png",
+    "logo": "./assets/logo.png",
+    "screenshots": [],
+    "websiteURL": "https://transcribe.so/agent",
+    "privacyPolicyURL": "https://transcribe.so/privacy-policy",
+    "termsOfServiceURL": "https://transcribe.so/terms-of-service"
+  }
+}
