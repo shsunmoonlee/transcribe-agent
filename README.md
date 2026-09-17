@@ -47,11 +47,27 @@ transcribe-so me
 
 ### Codex
 
+As a plugin (remote MCP server plus the skills):
+
+```bash
+codex plugin marketplace add shsunmoonlee/transcribe-agent
+codex plugin add transcribe-so@transcribe-agent
+```
+
+Or just the MCP server:
+
 ```bash
 codex mcp add transcribe --url https://transcribe.so/mcp
 ```
 
-Codex opens the OAuth flow on the first tool call.
+Codex opens the OAuth flow on the first tool call. The plugin ships
+[.codex-plugin/plugin.json](.codex-plugin/plugin.json) and
+[.agents/plugins/marketplace.json](.agents/plugins/marketplace.json).
+
+### Grok
+
+This repo ships [.grok-plugin/plugin.json](.grok-plugin/plugin.json); Grok
+Build reads the root `.mcp.json` and `skills/` from it.
 
 ### Cursor
 

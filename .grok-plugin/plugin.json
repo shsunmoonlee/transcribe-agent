@@ -1,7 +1,7 @@
 {
   "name": "transcribe-so",
   "version": "1.3.0",
-  "description": "Transcribe audio and video (YouTube, podcasts, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips, via the transcribe.so remote MCP server.",
+  "description": "Transcribe audio and video (YouTube, podcasts, meetings, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips, via the transcribe.so remote MCP server.",
   "author": {
     "name": "transcribe.so",
     "email": "support@transcribe.so",
@@ -18,9 +18,5 @@
     "podcast",
     "diarization",
     "mcp"
-  ],
-  "skills": [
-    "./skills/transcribe-audio",
-    "./skills/get-transcript"
   ]
 }
