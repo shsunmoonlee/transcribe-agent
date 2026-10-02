@@ -1,6 +1,6 @@
 {
   "name": "transcribe-so",
-  "version": "1.3.0",
+  "version": "1.6.1",
   "description": "Transcribe audio and video (YouTube, podcasts, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips, via the transcribe.so remote MCP server.",
   "mcpServers": {
     "transcribe-so": {

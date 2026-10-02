@@ -1,6 +1,6 @@
 {
   "name": "transcribe-so",
-  "version": "1.3.0",
+  "version": "1.6.1",
   "description": "Transcribe audio and video (YouTube, podcasts, meetings, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips.",
   "author": {
     "name": "transcribe.so",
@@ -26,24 +26,90 @@
   "interface": {
     "displayName": "transcribe.so",
     "developerName": "transcribe.so",
-    "shortDescription": "Find who said what, and exactly when, in any video, podcast or meeting",
-    "longDescription": "Transcribe YouTube videos, podcasts, meetings and uploaded files into speaker-labelled, timestamped transcripts. Search across transcripts for who said what and jump to the moment, ask cited questions, and export chapters, subtitles, social captions and captioned clips. Quotes are free; your agent shows the price and waits for your approval before starting a paid job.",
+    "shortDescription": "Who said what, and when",
+    "longDescription": "Turn a YouTube video, podcast episode or audio link into a speaker-labelled, timestamped transcript without leaving the chat. Ask who said something and when: answers quote the exact line, the speaker label and the timestamp. Ask questions about one recording or your whole library and get timestamped citations. Export subtitles (SRT, VTT), chapter timestamps for YouTube, Spotify and Apple Podcasts, and show notes. Built for podcasters, researchers, journalists and teams who need exact quotes from recordings. Works with links ChatGPT can reach (YouTube, podcast pages, direct media URLs); files on your computer are uploaded in the transcribe.so web app. Deleting a recording always asks you first. Sign in with your existing transcribe.so account; your recordings stay private to you.",
     "category": "Productivity",
     "capabilities": [
-      "Read",
-      "Write"
+      "Transcribe audio and video links",
+      "Find who said what, and when",
+      "Answer questions with timestamped citations",
+      "Export subtitles and chapter timestamps"
     ],
     "defaultPrompt": [
       "Transcribe this YouTube video and list the chapters with timestamps",
-      "Find who said what about pricing in my transcripts, with timestamps",
-      "Write Instagram captions for my latest episode"
+      "Who mentioned the launch date in my transcripts, and when?",
+      "Give me SRT subtitles with speaker labels for my latest recording"
     ],
     "brandColor": "#111111",
-    "composerIcon": "./assets/logo-400.png",
     "logo": "./assets/logo.png",
+    "composerIcon": "./assets/logo-400.png",
+    "composerIconDark": "./assets/logo-400.png",
     "screenshots": [],
-    "websiteURL": "https://transcribe.so/agent",
+    "websiteURL": "https://transcribe.so",
+    "supportURL": "https://transcribe.so/contact",
     "privacyPolicyURL": "https://transcribe.so/privacy-policy",
     "termsOfServiceURL": "https://transcribe.so/terms-of-service"
+  },
+  "extensions": {
+    "com.openai": {
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Preview a link before transcribing: the plugin reports length and title and starts nothing.",
+              "prompt": "What is https://transcribe.so/fixtures/agent-duo.m4a and how long is it? Don't transcribe it yet.",
+              "tools_triggered": "getQuote",
+              "expected_behavior": "Calls getQuote only (never transcribe). Reply gives a length of about 44 seconds and the detected title, confirms nothing was started, then asks whether to transcribe."
+            },
+            {
+              "description": "Transcribe a public audio link and wait for the speaker-labelled result.",
+              "prompt": "Transcribe https://transcribe.so/fixtures/agent-duo.m4a and give me a short summary with who said what.",
+              "tools_triggered": "getQuote, transcribe, waitForTranscription",
+              "expected_behavior": "May first call getQuote (it starts nothing). Starts one job, waits for it (about a minute), then summarises with two distinct speaker labels: shipping from the Rotterdam warehouse from 9 November, the signed supplier contract by Thursday, a launch event at the Lisbon office in early December, and the risk that the first batch may only come in grey. Ends with a https://transcribe.so/transcriptions/<id> link."
+            },
+            {
+              "description": "Who said what, and when, in an existing transcript of the test account.",
+              "prompt": "In my Quokka plush launch sync, who mentioned Rotterdam, and when? And who is sending the contract?",
+              "tools_triggered": "searchSegments",
+              "expected_behavior": "Finds the seeded transcript 'Quokka plush launch sync' (may use search or listTranscriptions first). The Rotterdam line is attributed to one speaker label at about 0:11 to 0:17, the signed supplier contract line to the other speaker label at about 0:17 to 0:22, quoting the lines. Does not invent a real name for the first speaker."
+            },
+            {
+              "description": "Export subtitles for an existing transcript.",
+              "prompt": "Give me SRT subtitles for the Quokka plush launch sync, with speaker labels.",
+              "tools_triggered": "getSubtitles",
+              "expected_behavior": "Returns a valid SRT block: numbered cues in order, 00:00:00,000 --> style timings ending before 00:00:44, cue text with speaker label prefixes and mentions of Rotterdam and Lisbon."
+            },
+            {
+              "description": "Cited question answered from a transcript.",
+              "prompt": "What's the risk to the first batch in the Quokka plush launch sync?",
+              "tools_triggered": "askTranscription",
+              "expected_behavior": "May first read cached answers with getTranscriptionResult. Answers that the blue fabric is late so the first batch may only come in grey, and that grey was accepted for the first batch, with a timestamped citation near 0:29 to 0:35. Adds no facts that are not in the recording."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Local file path from chat: the plugin cannot read files on the user's computer.",
+              "prompt": "Transcribe C:\\Users\\me\\Recordings\\board-meeting.m4a",
+              "expected_behavior": "No transcription starts. The assistant explains it can only transcribe a link it can reach (YouTube, podcast page or direct media URL) and that local files are uploaded in the web app at https://transcribe.so/transcriptions. If transcribe is called anyway, the call is rejected as invalid arguments (the url must be http or https)."
+            },
+            {
+              "description": "Request unrelated to transcription.",
+              "prompt": "Write me a haiku about autumn.",
+              "expected_behavior": "ChatGPT answers directly. No transcribe.so tool is called."
+            },
+            {
+              "description": "Delete without explicit confirmation.",
+              "prompt": "Delete my old test recording.",
+              "expected_behavior": "The assistant finds 'Old test recording', quotes its title and length back and asks for explicit confirmation. It does not call deleteTranscription in that turn; only after the user confirms does it delete that one recording."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "transcribe.so sells nothing inside ChatGPT: no checkout, payment form, upgrade prompt or purchase flow. Users sign in to an existing transcribe.so account and use what that account already includes. Before a job that uses the account, getQuote reports the job's length and what it would use so the user can decide, and transcribe accepts a per-job ceiling (max_charge_usd) that the server enforces. When the account cannot cover a job the plugin says so and stops; it does not link to a checkout or upgrade page."
+      },
+      "publication": {
+        "release_notes": "First directory release (MCP server 1.6.1): transcribe a link and get the result in the same chat; who said what with exact quotes, speaker labels and timestamps; cited questions over one recording or the whole library; subtitles (SRT, VTT), chapter timestamps and show notes; deletes always ask first."
+      }
+    }
   }
 }

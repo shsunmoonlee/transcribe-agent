@@ -1,6 +1,37 @@
 # Changelog
 
-All notable changes to the `transcribe-so` CLI.
+All notable changes to the `transcribe-so` CLI (0.x) and to the plugin
+manifests (1.x, tracking the MCP server version).
+
+## Plugin 1.6.1
+
+Plugin manifests only (`.codex-plugin`, `.claude-plugin`, `.cursor-plugin`,
+`.grok-plugin`, `gemini-extension.json`); the CLI stays at 0.2.0.
+
+### Changed
+
+- Directory-safe copy in `skills/transcribe-audio`, `skills/get-transcript`
+  and `commands/transcribe.md`: the model-readable text describes what
+  `getQuote` reports and that the agent waits for the user's go-ahead; it
+  carries no money, promotion or account-tier wording and no em-dashes. The
+  skills are based on the copy OpenAI's directory scan accepted, with factual
+  corrections: `getTranscript` inline truncation (`truncated`,
+  `download_url`), `idempotency_key` on `transcribe` and `renderClip`,
+  `artifact_missing` as a `not_ready` reason, and the approval rule (go ahead
+  when `retail_usd` is 0 or within a limit the user already gave, otherwise
+  ask first).
+- Plugin versions now track the MCP server version (1.6.1) in every manifest
+  instead of a separate 1.x line.
+
+### Added
+
+- `.codex-plugin/plugin.json`: Codex listing block (`interface`) and review
+  metadata (`extensions.com.openai.review` test cases, commerce declaration,
+  `extensions.com.openai.publication.release_notes`). The demo recording URL
+  is injected at build time, never committed.
+- `scripts/build-openai-plugin.mjs` (`pnpm run build:openai-plugin`): builds
+  the OpenAI directory submission ZIP into `out/` and fails on listing-tier
+  copy violations. See README, "Directories".
 
 ## 0.2.0
 

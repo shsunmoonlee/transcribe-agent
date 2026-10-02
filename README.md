@@ -179,6 +179,32 @@ free (`quote` before committing). Clip renders are $0.05 per started 60 s.
 Live Q&A uses a daily allowance, never the wallet. Details:
 <https://transcribe.so/pricing>
 
+## Directories
+
+The plugin manifests (`.codex-plugin`, `.claude-plugin`, `.cursor-plugin`,
+`.grok-plugin`, `gemini-extension.json`) are versioned together and track the
+MCP server version; the CLI in `package.json` has its own version.
+
+Build the OpenAI Plugins Directory submission ZIP:
+
+```bash
+pnpm run build:openai-plugin -- --video-url https://.../demo.mp4   # or DEMO_RECORDING_URL=...
+# -> out/transcribe-so-openai-plugin.zip (.codex-plugin/plugin.json, .mcp.json, skills/, assets/)
+```
+
+The script fails when model-readable copy breaks the listing rule: the
+`interface` block, release notes, `skills/**/SKILL.md`, `commands/*.md` and
+every manifest description carry no money, promotion or account-tier wording,
+no em-dashes, and no links outside transcribe.so and github.com. The agent
+learns what `getQuote` reports and when to ask the user before starting,
+nothing more. It also fails when the manifests disagree on the version or
+when `skills/` holds anything but `<skill>/SKILL.md`. Rules:
+<https://developers.openai.com/plugins/plugin-guidelines>.
+
+The root [SKILL.md](SKILL.md) documents the CLI for `npx skills add` and is
+not part of any directory listing; CLI flags such as `--max-charge-usd` live
+there.
+
 ## Privacy Policy
 
 This tooling sends the media URLs, uploaded files, and questions you provide
