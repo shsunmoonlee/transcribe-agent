@@ -18,10 +18,15 @@ Plugin manifests and skills only; the CLI stays at 0.2.0. Tracks MCP server
 - Codex `commerce_description` now covers clips (`getClipQuote` preview and
   the `renderClip` ceiling).
 - README: the MCP tool count is corrected to 24 (it said 21).
-- Narrowed `idempotency_key` guidance for `transcribe` and `renderClip` in
-  both skills: use a new key only after a refusal where nothing was started
-  or drawn and the user has resolved it; if the same key is rejected because
-  the arguments differ, the first call may have gone through, so re-send the
+- `idempotency_key` retry rule for `transcribe` and `renderClip` in both
+  skills, aligned with the server: keep the same key by default (a retry with
+  the same arguments replays the first result; `queue_full` and server errors
+  after `retry_after`; `not_ready` while an earlier call may still be
+  running). Refusals are replayed under the key for 24 hours, so a new key is
+  needed only after a refusal actually received that says nothing was started
+  or drawn, once its cause is fixed; the listed codes are examples, not a
+  closed list. If the same key is rejected because the arguments differ and
+  the first call was never answered, it may have gone through: re-send the
   same key with the original arguments or check the job or clip first.
 - Every plugin manifest is 1.7.0; the Codex release notes name MCP server
   1.7.0 and the clip preview.

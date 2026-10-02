@@ -36,16 +36,26 @@ timestamped transcripts with automatic chapters, sections, and cited Q&A.
    this is the expected loop, not an error). For long recordings, hand the
    user the dashboard link (https://transcribe.so/transcriptions); they also
    get a completion email.
-4. `transcribe` is not idempotent unless you pass `idempotency_key` (re-send
-   the same key with the same arguments and the first result replays). Without
-   a key, if a call times out, check `listTranscriptions` before retrying.
-   Use a NEW key only after a refusal where nothing was started
-   (`max_charge_exceeded`, `insufficient_funds`, `queue_full`) and the user
-   has resolved it. If the same key is rejected because the arguments differ,
-   the first call may have gone through: check `listTranscriptions` /
-   `getTranscription` before transcribing again (re-sending the SAME key with
-   the original arguments also replays the first result); never switch keys
-   to get past that rejection.
+4. Retries: pass `idempotency_key`; without one `transcribe` is not idempotent
+   (check `listTranscriptions` before retrying a timed-out call). Keep the
+   SAME key unless one of the NEW-key cases below applies:
+   - SAME key: a retry with the same arguments replays the first result.
+     After `queue_full` or a server error (neither is stored under the key),
+     wait `retry_after` seconds first. On `not_ready` the earlier call may
+     still be running: keep retrying for up to 5 minutes.
+   - NEW key: refusals are replayed under the key for 24 hours too, so a new
+     key is needed only after a refusal you actually received that says
+     nothing was started, once its cause is fixed (for example
+     `insufficient_funds` or `max_charge_exceeded` after the user resolved
+     it, or a corrected input), or when `not_ready` persists past those 5
+     minutes and the job is not in `listTranscriptions` (match the
+     `client_reference` you sent, if any). Changed arguments after such a
+     refusal are a new request and take the new key.
+   - Key rejected because the arguments differ, and you never got an answer
+     to the first call: it may have gone through. Re-send the SAME key with
+     the original arguments to get that result back, or check
+     `listTranscriptions` / `getTranscription`, before transcribing again;
+     never switch keys just to get past that rejection.
 
 Agents with their own public endpoint can pass `callback_url` to `transcribe`
 to receive a signed `transcription.completed` / `transcription.failed`

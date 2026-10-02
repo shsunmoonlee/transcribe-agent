@@ -57,15 +57,23 @@ same library everywhere.
   figure is higher the call is refused with `max_charge_exceeded` before
   anything is held and nothing is rendered: report the figure and ask; do not
   raise the ceiling yourself.
-  Not idempotent unless you pass `idempotency_key` (re-send the same key with
-  the same arguments and the first result replays); without a key, check
-  `getClip` before retrying a timed-out call. Use a NEW key only after a
-  refusal where nothing was drawn (`max_charge_exceeded`,
-  `insufficient_funds`, `rate_limited`) and the user has resolved it. If the
-  same key is rejected because the arguments differ, the first call may have
-  gone through: re-send the SAME key with the original arguments, or check
-  `getClip`, before rendering again; never switch keys to get past that
-  rejection.
+  Retries: pass `idempotency_key`; without one `renderClip` is not idempotent
+  (check `getClip` before retrying a timed-out call). Keep the SAME key
+  unless the NEW-key case below applies:
+  - SAME key: a retry with the same arguments replays the first result. A
+    `not_ready` saying a request with this key is already in flight also
+    keeps the same key.
+  - NEW key: refusals are replayed under the key for 24 hours too, so a new
+    key is needed only after a refusal you actually received that says
+    nothing was drawn, once its cause is fixed (for example
+    `max_charge_exceeded` or `insufficient_funds` after the user resolved it,
+    `not_ready` once the transcription has completed, `rate_limited` once
+    clips in flight have finished; check with `getClip`). Changed arguments
+    after such a refusal are a new request and take the new key.
+  - Key rejected because the arguments differ, and you never got an answer to
+    the first call: it may have gone through. Re-send the SAME key with the
+    original arguments, or check `getClip`, before rendering again; never
+    switch keys just to get past that rejection.
 - `getClip`: pass `wait_seconds` (up to 45) to long-poll; `completed`
   carries a presigned `mp4_url` valid one hour (call again for a fresh one).
   Renders take several times the clip length; expect multiple calls.
