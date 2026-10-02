@@ -32,7 +32,7 @@ hard rules, and exit codes.
 ```
 
 The plugin connects Claude to the remote MCP server at
-`https://transcribe.so/mcp` (21 tools) and bundles the `transcribe-audio` and
+`https://transcribe.so/mcp` (24 tools) and bundles the `transcribe-audio` and
 `get-transcript` skills plus a one-shot `/transcribe` command. First tool call
 triggers the OAuth browser flow; alternatively authenticate with a
 `tsk_live_*` API key via `/mcp`.

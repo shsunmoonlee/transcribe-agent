@@ -3,6 +3,31 @@
 All notable changes to the `transcribe-so` CLI (0.x) and to the plugin
 manifests (1.x, tracking the MCP server version).
 
+## Plugin 1.7.0
+
+Plugin manifests and skills only; the CLI stays at 0.2.0. Tracks MCP server
+1.7.0.
+
+### Changed
+
+- `skills/get-transcript`, Clips: call the new read tool `getClipQuote` for
+  the range first, tell the user its `charge_usd` and wait for a go-ahead
+  (unless it is within a limit the user already gave), then pass the agreed
+  figure to `renderClip` as `max_charge_usd`. On `max_charge_exceeded` nothing
+  is held or rendered: report the figure and ask, never raise the ceiling.
+- Codex `commerce_description` now covers clips (`getClipQuote` preview and
+  the `renderClip` ceiling).
+- README: the MCP tool count is corrected to 24 (it said 21).
+- Narrowed `idempotency_key` guidance for `transcribe` and `renderClip` in
+  both skills: use a new key only after a refusal where nothing was started
+  or drawn and the user has resolved it; if the same key is rejected because
+  the arguments differ, the first call may have gone through, so re-send the
+  same key with the original arguments or check the job or clip first.
+- Every plugin manifest is 1.7.0; the Codex release notes name MCP server
+  1.7.0 and the clip preview.
+- `scripts/check-api-coverage.ts`: `getClipQuote` added to the skip list with
+  the other clip operations (no CLI clip commands yet).
+
 ## Plugin 1.6.1
 
 Plugin manifests only (`.codex-plugin`, `.claude-plugin`, `.cursor-plugin`,

@@ -35,6 +35,7 @@ const SKIPPED: Record<string, string> = {
   createClip: 'v0.3: clips:* commands',
   listClips: 'v0.3: clips:* commands',
   getClip: 'v0.3: clips:* commands',
+  getClipQuote: 'v0.3: clips:* commands',
   askLibrary: 'v0.3: ask:library command',
   getWebhook: 'v0.3: webhooks:get (API has one webhook per key, no list)',
   createWebhook: 'v0.3: webhooks:*',

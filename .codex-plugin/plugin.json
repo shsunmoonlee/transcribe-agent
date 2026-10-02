@@ -1,6 +1,6 @@
 {
   "name": "transcribe-so",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "Transcribe audio and video (YouTube, podcasts, meetings, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips.",
   "author": {
     "name": "transcribe.so",
@@ -105,10 +105,10 @@
           ]
         },
         "commerce": false,
-        "commerce_description": "transcribe.so sells nothing inside ChatGPT: no checkout, payment form, upgrade prompt or purchase flow. Users sign in to an existing transcribe.so account and use what that account already includes. Before a job that uses the account, getQuote reports the job's length and what it would use so the user can decide, and transcribe accepts a per-job ceiling (max_charge_usd) that the server enforces. When the account cannot cover a job the plugin says so and stops; it does not link to a checkout or upgrade page."
+        "commerce_description": "transcribe.so sells nothing inside ChatGPT: no checkout, payment form, upgrade prompt or purchase flow. Users sign in to an existing transcribe.so account and use what that account already includes. Before a job that uses the account, getQuote reports the job's length and what it would use so the user can decide, and transcribe accepts a per-job ceiling (max_charge_usd) that the server enforces. For clips, getClipQuote reports what a clip would use before anything is rendered, and renderClip accepts the same per-call ceiling (max_charge_usd) that the server enforces. When the account cannot cover a job the plugin says so and stops; it does not link to a checkout or upgrade page."
       },
       "publication": {
-        "release_notes": "First directory release (MCP server 1.6.1): transcribe a link and get the result in the same chat; who said what with exact quotes, speaker labels and timestamps; cited questions over one recording or the whole library; subtitles (SRT, VTT), chapter timestamps and show notes; deletes always ask first."
+        "release_notes": "First directory release (MCP server 1.7.0): transcribe a link and get the result in the same chat; who said what with exact quotes, speaker labels and timestamps; cited questions over one recording or the whole library; subtitles (SRT, VTT), chapter timestamps and show notes; captioned clips, with a preview before anything renders; deletes always ask first."
       }
     }
   }

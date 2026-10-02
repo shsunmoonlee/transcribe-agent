@@ -39,6 +39,13 @@ timestamped transcripts with automatic chapters, sections, and cited Q&A.
 4. `transcribe` is not idempotent unless you pass `idempotency_key` (re-send
    the same key with the same arguments and the first result replays). Without
    a key, if a call times out, check `listTranscriptions` before retrying.
+   Use a NEW key only after a refusal where nothing was started
+   (`max_charge_exceeded`, `insufficient_funds`, `queue_full`) and the user
+   has resolved it. If the same key is rejected because the arguments differ,
+   the first call may have gone through: check `listTranscriptions` /
+   `getTranscription` before transcribing again (re-sending the SAME key with
+   the original arguments also replays the first result); never switch keys
+   to get past that rejection.
 
 Agents with their own public endpoint can pass `callback_url` to `transcribe`
 to receive a signed `transcription.completed` / `transcription.failed`

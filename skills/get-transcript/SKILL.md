@@ -42,11 +42,30 @@ same library everywhere.
 
 ## Clips
 
+- `getClipQuote`: preview before rendering. Pass `transcription_id`,
+  `start_seconds` and `end_seconds`; it renders nothing and writes nothing,
+  and returns `charge_usd` (what `renderClip` would use from the user's
+  existing transcribe.so account for that range) plus the normalized range and
+  `clip_seconds`. It runs the same range checks as `renderClip`, so it doubles
+  as a dry run. It does not check what the account can cover or how many
+  clips are already rendering; `renderClip` enforces those when it runs.
 - `renderClip`: hosted captioned MP4 of a 1-60 s range of a completed
-  transcription with word timestamps. It uses the user's existing transcribe.so
-  account and reports what it used as `charge_usd`; tell the user before
-  calling. Not idempotent unless you pass `idempotency_key`; without a key,
-  check `getClip` before retrying.
+  transcription with word timestamps. A clip always uses the account, so
+  first call `getClipQuote` for the same range, tell the user its
+  `charge_usd` and wait for a go-ahead, unless it is within a limit the user
+  already gave. Pass the agreed figure as `max_charge_usd`. If the real
+  figure is higher the call is refused with `max_charge_exceeded` before
+  anything is held and nothing is rendered: report the figure and ask; do not
+  raise the ceiling yourself.
+  Not idempotent unless you pass `idempotency_key` (re-send the same key with
+  the same arguments and the first result replays); without a key, check
+  `getClip` before retrying a timed-out call. Use a NEW key only after a
+  refusal where nothing was drawn (`max_charge_exceeded`,
+  `insufficient_funds`, `rate_limited`) and the user has resolved it. If the
+  same key is rejected because the arguments differ, the first call may have
+  gone through: re-send the SAME key with the original arguments, or check
+  `getClip`, before rendering again; never switch keys to get past that
+  rejection.
 - `getClip`: pass `wait_seconds` (up to 45) to long-poll; `completed`
   carries a presigned `mp4_url` valid one hour (call again for a fresh one).
   Renders take several times the clip length; expect multiple calls.
