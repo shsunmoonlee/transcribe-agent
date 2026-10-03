@@ -62,7 +62,11 @@ same library everywhere.
   unless the NEW-key case below applies:
   - SAME key: a retry with the same arguments replays the first result. A
     `not_ready` saying a request with this key is already in flight also
-    keeps the same key.
+    keeps the same key, and so does one saying the earlier request just
+    completed with an error (nothing was recorded). If the in-flight answer
+    carries `stale: true` (no result recorded after 120 seconds), a clip may
+    already have been rendered and drawn: do not send a new key on your own;
+    tell the user.
   - NEW key: refusals are replayed under the key for 24 hours too, so a new
     key is needed only after a refusal you actually received that says
     nothing was drawn, once its cause is fixed (for example

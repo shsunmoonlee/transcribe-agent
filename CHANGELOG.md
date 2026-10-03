@@ -28,6 +28,13 @@ Plugin manifests and skills only; the CLI stays at 0.2.0. Tracks MCP server
   closed list. If the same key is rejected because the arguments differ and
   the first call was never answered, it may have gone through: re-send the
   same key with the original arguments or check the job or clip first.
+- Retry bounds now match the server (transcribe.so #1541): the preview phase
+  ends within 45 seconds (retry once, then tell the user), and a same-key
+  `not_ready` carries `stale: true` after 120 seconds with no result
+  recorded. `transcribe`: on `stale`, a job with your `client_reference` in
+  any status counts as found; with no `client_reference`, tell the user
+  instead of switching keys. `renderClip`: on `stale`, tell the user. The
+  earlier "keep retrying for up to 5 minutes" rule is gone.
 - Every plugin manifest is 1.7.0; the Codex release notes name MCP server
   1.7.0 and the clip preview.
 - `scripts/check-api-coverage.ts`: `getClipQuote` added to the skip list with

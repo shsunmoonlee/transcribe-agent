@@ -41,16 +41,25 @@ timestamped transcripts with automatic chapters, sections, and cited Q&A.
    SAME key unless one of the NEW-key cases below applies:
    - SAME key: a retry with the same arguments replays the first result.
      After `queue_full` or a server error (neither is stored under the key),
-     wait `retry_after` seconds first. On `not_ready` the earlier call may
-     still be running: keep retrying for up to 5 minutes.
+     wait `retry_after` seconds first. If reading the source took longer than
+     45 seconds, retry the same key once; if that is refused the same way,
+     stop and tell the user (for `external_url`, pass `duration_seconds` if
+     you know the length). On `not_ready` saying the earlier call is already
+     in flight, it is still running and the server ends its preview within
+     45 seconds: keep retrying the same key. A `not_ready` saying the earlier
+     request just completed with an error recorded nothing: retry, same key.
+   - `not_ready` with `stale: true` (no result recorded after 120 seconds):
+     check `listTranscriptions` for the `client_reference` you sent. A job
+     there in ANY status counts as found, so do not create another; if it is
+     still `quoted` (not started yet), tell the user. Only if none is listed
+     use a new key. If you sent no `client_reference`, do not switch keys on
+     your own: tell the user.
    - NEW key: refusals are replayed under the key for 24 hours too, so a new
      key is needed only after a refusal you actually received that says
      nothing was started, once its cause is fixed (for example
      `insufficient_funds` or `max_charge_exceeded` after the user resolved
-     it, or a corrected input), or when `not_ready` persists past those 5
-     minutes and the job is not in `listTranscriptions` (match the
-     `client_reference` you sent, if any). Changed arguments after such a
-     refusal are a new request and take the new key.
+     it, or a corrected input), or in the `stale` case above. Changed
+     arguments after such a refusal are a new request and take the new key.
    - Key rejected because the arguments differ, and you never got an answer
      to the first call: it may have gone through. Re-send the SAME key with
      the original arguments to get that result back, or check
