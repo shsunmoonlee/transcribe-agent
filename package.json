@@ -12,6 +12,7 @@
     "start": "node ./dist/index.js",
     "check:coverage": "npx -y tsx scripts/check-api-coverage.ts",
     "test": "npx -y tsx scripts/test-units.ts",
+    "build:openai-plugin": "node scripts/build-openai-plugin.mjs",
     "prepublishOnly": "pnpm run build"
   },
   "files": [

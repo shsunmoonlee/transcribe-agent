@@ -1,6 +1,74 @@
 # Changelog
 
-All notable changes to the `transcribe-so` CLI.
+All notable changes to the `transcribe-so` CLI (0.x) and to the plugin
+manifests (1.x, tracking the MCP server version).
+
+## Plugin 1.7.0
+
+Plugin manifests and skills only; the CLI stays at 0.2.0. Tracks MCP server
+1.7.0.
+
+### Changed
+
+- `skills/get-transcript`, Clips: call the new read tool `getClipQuote` for
+  the range first, tell the user its `charge_usd` and wait for a go-ahead
+  (unless it is within a limit the user already gave), then pass the agreed
+  figure to `renderClip` as `max_charge_usd`. On `max_charge_exceeded` nothing
+  is held or rendered: report the figure and ask, never raise the ceiling.
+- Codex `commerce_description` now covers clips (`getClipQuote` preview and
+  the `renderClip` ceiling).
+- README: the MCP tool count is corrected to 24 (it said 21).
+- `idempotency_key` retry rule for `transcribe` and `renderClip` in both
+  skills, aligned with the server: keep the same key by default (a retry with
+  the same arguments replays the first result; `queue_full` and server errors
+  after `retry_after`; `not_ready` while an earlier call may still be
+  running). Refusals are replayed under the key for 24 hours, so a new key is
+  needed only after a refusal actually received that says nothing was started
+  or drawn, once its cause is fixed; the listed codes are examples, not a
+  closed list. If the same key is rejected because the arguments differ and
+  the first call was never answered, it may have gone through: re-send the
+  same key with the original arguments or check the job or clip first.
+- Retry bounds now match the server (transcribe.so #1541): the preview phase
+  ends within 45 seconds (retry once, then tell the user), and a same-key
+  `not_ready` carries `stale: true` after 120 seconds with no result
+  recorded. `transcribe`: on `stale`, a job with your `client_reference` in
+  any status counts as found; with no `client_reference`, tell the user
+  instead of switching keys. `renderClip`: on `stale`, tell the user. The
+  earlier "keep retrying for up to 5 minutes" rule is gone.
+- Every plugin manifest is 1.7.0; the Codex release notes name MCP server
+  1.7.0 and the clip preview.
+- `scripts/check-api-coverage.ts`: `getClipQuote` added to the skip list with
+  the other clip operations (no CLI clip commands yet).
+
+## Plugin 1.6.1
+
+Plugin manifests only (`.codex-plugin`, `.claude-plugin`, `.cursor-plugin`,
+`.grok-plugin`, `gemini-extension.json`); the CLI stays at 0.2.0.
+
+### Changed
+
+- Directory-safe copy in `skills/transcribe-audio`, `skills/get-transcript`
+  and `commands/transcribe.md`: the model-readable text describes what
+  `getQuote` reports and that the agent waits for the user's go-ahead; it
+  carries no money, promotion or account-tier wording and no em-dashes. The
+  skills are based on the copy OpenAI's directory scan accepted, with factual
+  corrections: `getTranscript` inline truncation (`truncated`,
+  `download_url`), `idempotency_key` on `transcribe` and `renderClip`,
+  `artifact_missing` as a `not_ready` reason, and the approval rule (go ahead
+  when `retail_usd` is 0 or within a limit the user already gave, otherwise
+  ask first).
+- Plugin versions now track the MCP server version (1.6.1) in every manifest
+  instead of a separate 1.x line.
+
+### Added
+
+- `.codex-plugin/plugin.json`: Codex listing block (`interface`) and review
+  metadata (`extensions.com.openai.review` test cases, commerce declaration,
+  `extensions.com.openai.publication.release_notes`). The demo recording URL
+  is injected at build time, never committed.
+- `scripts/build-openai-plugin.mjs` (`pnpm run build:openai-plugin`): builds
+  the OpenAI directory submission ZIP into `out/` and fails on listing-tier
+  copy violations. See README, "Directories".
 
 ## 0.2.0
 

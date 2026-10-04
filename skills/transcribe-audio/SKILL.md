@@ -14,29 +14,57 @@ timestamped transcripts with automatic chapters, sections, and cited Q&A.
 - `platform_url`: a public page URL on a supported platform (Apple Podcasts,
   SoundCloud, Vimeo, Twitch, Loom and similar)
 - `external_url`: a direct http(s) link to an audio or video file
-- `upload`: a local file — call `createUpload` for a presigned PUT URL
+- `upload`: a local file (shell agents only): call `createUpload` for a presigned PUT URL
   (15 minute TTL), PUT the bytes, then pass the returned `upload_id` together
   with `duration_seconds`
 
 ## Flow
 
-1. Check the price before creating a job. Stay within the user's authorized
-   budget; ask before exceeding it or starting another paid attempt. Call
-   `getQuote` first (no charge; transcription is billed per minute from the
-   account wallet — new accounts start with free credit). Pass
-   `max_charge_usd` to `transcribe` to make the ceiling binding server-side:
-   if the real charge is higher the call is refused with
-   `max_charge_exceeded` before any wallet hold, and nothing is started.
-   Report the refused price and ask; do not raise the ceiling yourself.
+1. Preview before creating a job: call `getQuote` first. It starts nothing;
+   it returns the length, the detected title and what the job would use from
+   the user's existing transcribe.so account (`retail_usd`, 0 when the account
+   already includes it). When `retail_usd` is 0, or within a limit the user
+   already gave, go ahead; otherwise tell the user the figure and wait for a
+   go-ahead. Pass the figure the user agreed to as `max_charge_usd` to
+   `transcribe`; the server enforces it: if the real figure is higher the call
+   is refused with `max_charge_exceeded` and nothing is started. Report the
+   refused figure and ask; do not raise the ceiling yourself.
 2. Call `transcribe` with the source. It returns `id` immediately; jobs are
    asynchronous.
 3. For short recordings, long-poll with `waitForTranscription` (each call
-   covers ~90 s; `_timed_out: true` means still processing — call it again,
+   covers ~90 s; `_timed_out: true` means still processing; call it again,
    this is the expected loop, not an error). For long recordings, hand the
-   user the dashboard link (https://transcribe.so/transcriptions) — they also
+   user the dashboard link (https://transcribe.so/transcriptions); they also
    get a completion email.
-4. `transcribe` is NOT idempotent: if a call times out, check
-   `listTranscriptions` before retrying.
+4. Retries: pass `idempotency_key`; without one `transcribe` is not idempotent
+   (check `listTranscriptions` before retrying a timed-out call). Keep the
+   SAME key unless one of the NEW-key cases below applies:
+   - SAME key: a retry with the same arguments replays the first result.
+     After `queue_full` or a server error (neither is stored under the key),
+     wait `retry_after` seconds first. If reading the source took longer than
+     45 seconds, retry the same key once; if that is refused the same way,
+     stop and tell the user (for `external_url`, pass `duration_seconds` if
+     you know the length). On `not_ready` saying the earlier call is already
+     in flight, it is still running and the server ends its preview within
+     45 seconds: keep retrying the same key. A `not_ready` saying the earlier
+     request just completed with an error recorded nothing: retry, same key.
+   - `not_ready` with `stale: true` (no result recorded after 120 seconds):
+     check `listTranscriptions` for the `client_reference` you sent. A job
+     there in ANY status counts as found, so do not create another; if it is
+     still `quoted` (not started yet), tell the user. Only if none is listed
+     use a new key. If you sent no `client_reference`, do not switch keys on
+     your own: tell the user.
+   - NEW key: refusals are replayed under the key for 24 hours too, so a new
+     key is needed only after a refusal you actually received that says
+     nothing was started, once its cause is fixed (for example
+     `insufficient_funds` or `max_charge_exceeded` after the user resolved
+     it, or a corrected input), or in the `stale` case above. Changed
+     arguments after such a refusal are a new request and take the new key.
+   - Key rejected because the arguments differ, and you never got an answer
+     to the first call: it may have gone through. Re-send the SAME key with
+     the original arguments to get that result back, or check
+     `listTranscriptions` / `getTranscription`, before transcribing again;
+     never switch keys just to get past that rejection.
 
 Agents with their own public endpoint can pass `callback_url` to `transcribe`
 to receive a signed `transcription.completed` / `transcription.failed`
@@ -52,9 +80,5 @@ https://transcribe.so/settings/api-keys sent as the Bearer token.
 ## Related
 
 - Retrieve results, subtitles, clips, Q&A: see the `get-transcript` skill
-- CLI alternative for shell workflows (JSON stdout, budget-gated `run`,
-  `--max-charge-usd` server ceiling):
-  `npm install -g transcribe-so`; see the root SKILL.md of
-  https://github.com/shsunmoonlee/transcribe-agent
 - REST equivalent of everything here: https://transcribe.so/api/v1/openapi.yaml
 - Developer docs: https://transcribe.so/developers/docs
