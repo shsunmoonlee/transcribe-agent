@@ -1,6 +1,6 @@
 ---
 name: transcribe-audio
-description: Transcribe audio or video from a YouTube URL, platform URL (Apple Podcasts, SoundCloud, Vimeo, Twitch, Loom), direct file URL, or local file upload into speaker-labelled, timestamped segments with chapters, sections, and cited Q&A. Use when the user wants a transcript, show notes, chapters, or analysis of any recording.
+description: Transcribe audio or video from a YouTube URL, platform URL (Apple Podcasts, SoundCloud, Vimeo, Twitch, Loom, public TikTok, X and Facebook video posts), direct file URL, or local file upload into speaker-labelled, timestamped segments with chapters, sections, and cited Q&A. Use when the user wants a transcript, show notes, chapters, or analysis of any recording.
 ---
 
 # Transcribe audio or video
@@ -12,7 +12,8 @@ timestamped transcripts with automatic chapters, sections, and cited Q&A.
 
 - `youtube`: a YouTube video URL
 - `platform_url`: a public page URL on a supported platform (Apple Podcasts,
-  SoundCloud, Vimeo, Twitch, Loom and similar)
+  SoundCloud, Vimeo, Twitch, Loom and similar, plus public TikTok, X and
+  Facebook video posts)
 - `external_url`: a direct http(s) link to an audio or video file
 - `upload`: a local file (shell agents only): call `createUpload` for a presigned PUT URL
   (15 minute TTL), PUT the bytes, then pass the returned `upload_id` together

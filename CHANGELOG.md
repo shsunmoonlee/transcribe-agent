@@ -3,6 +3,23 @@
 All notable changes to the `transcribe-so` CLI (0.x) and to the plugin
 manifests (1.x, tracking the MCP server version).
 
+## Plugin 1.8.0
+
+Plugin manifests and skills only; the CLI stays at 0.2.0. Tracks MCP server
+1.8.0.
+
+### Changed
+
+- All manifests move to 1.8.0 with the MCP server. Server 1.8.0 adds the clip
+  options from transcribe.so#1583 (`output`: audiogram, video or audio;
+  `caption_position`, `words_per_line`, `framing`, `highlight_color`,
+  `rights_affirmed` for video from a link) and accepts public TikTok, X and
+  Facebook video links as `platform_url`.
+- `skills/transcribe-audio`: the platform list names TikTok, X and Facebook.
+- README: a "What the Claude plugin runs and sends" section for directory
+  review; the ChatGPT section points at the developer-mode connector only.
+- LICENSE: copyright holder is SUNMOON.CO PTE. LTD. (transcribe.so).
+
 ## Plugin 1.7.0
 
 Plugin manifests and skills only; the CLI stays at 0.2.0. Tracks MCP server
