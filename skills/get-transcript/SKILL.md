@@ -56,13 +56,15 @@ same library everywhere.
   (default: MP4 with captions over a generated background), `video` (the
   source video with captions burned in) or `audio` (M4A, no captions).
   Video needs the source video: for a link source pass `rights_affirmed:
-  true` only after the user confirms they own the video or may reuse it, and
-  video can still be unavailable for that source. `style`,
-  `caption_position`, `words_per_line`, `highlight_color` and `framing` tune
-  the result; an option the server does not offer is refused with
-  `feature_unavailable` before anything is held. A clip always uses the
-  account, so
-  first call `getClipQuote` for the same range, tell the user its
+  true` only after the user confirms they own the video or may reuse it (else
+  `invalid_request` with `error.reason: rights_required`); for an upload, the
+  original video must first be added in the web app. `video_unavailable`
+  means video cannot be made for this transcription: offer the audiogram,
+  which still works. `style`, `caption_position`, `words_per_line`,
+  `highlight_color` and `framing` tune the result; an option the server does
+  not offer is refused with `invalid_request` and `error.reason:
+  feature_unavailable` before anything is held. A clip always uses the
+  account, so first call `getClipQuote` for the same range, tell the user its
   `charge_usd` and wait for a go-ahead, unless it is within a limit the user
   already gave. Pass the agreed figure as `max_charge_usd`. If the real
   figure is higher the call is refused with `max_charge_exceeded` before
