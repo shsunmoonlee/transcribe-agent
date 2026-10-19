@@ -47,11 +47,24 @@ same library everywhere.
   and returns `charge_usd` (what `renderClip` would use from the user's
   existing transcribe.so account for that range) plus the normalized range and
   `clip_seconds`. It runs the same range checks as `renderClip`, so it doubles
-  as a dry run. It does not check what the account can cover or how many
-  clips are already rendering; `renderClip` enforces those when it runs.
-- `renderClip`: hosted captioned MP4 of a 1-60 s range of a completed
-  transcription with word timestamps. A clip always uses the account, so
-  first call `getClipQuote` for the same range, tell the user its
+  as a dry run. It takes the same options as `renderClip`, and the figure
+  does not depend on the output or style. It does not check what the account
+  can cover or how many clips are already rendering; `renderClip` enforces
+  those when it runs.
+- `renderClip`: hosted clip of a 1-60 s range (up to 180 s where enabled) of
+  a completed transcription with word timestamps. `output`: `audiogram`
+  (default: MP4 with captions over a generated background), `video` (the
+  source video with captions burned in) or `audio` (M4A, no captions).
+  Video needs the source video: for a link source pass `rights_affirmed:
+  true` only after the user confirms they own the video or may reuse it (else
+  `invalid_request` with `error.reason: rights_required`); for an upload, the
+  original video must first be added in the web app. `video_unavailable`
+  means video cannot be made for this transcription: offer the audiogram,
+  which still works. `style`, `caption_position`, `words_per_line`,
+  `highlight_color` and `framing` tune the result; an option the server does
+  not offer is refused with `invalid_request` and `error.reason:
+  feature_unavailable` before anything is held. A clip always uses the
+  account, so first call `getClipQuote` for the same range, tell the user its
   `charge_usd` and wait for a go-ahead, unless it is within a limit the user
   already gave. Pass the agreed figure as `max_charge_usd`. If the real
   figure is higher the call is refused with `max_charge_exceeded` before
@@ -79,8 +92,11 @@ same library everywhere.
     original arguments, or check `getClip`, before rendering again; never
     switch keys just to get past that rejection.
 - `getClip`: pass `wait_seconds` (up to 45) to long-poll; `completed`
-  carries a presigned `mp4_url` valid one hour (call again for a fresh one).
-  Renders take several times the clip length; expect multiple calls.
+  carries `file_url`, a presigned link valid one hour (call again for a
+  fresh one): an MP4 for audiogram or video (also in `mp4_url`) or an M4A
+  for audio (`mp4_url` is null then). `srt_url` holds the captions when they
+  were made. A video clip may first wait for its source video; expect
+  multiple calls.
 
 ## Live Q&A (daily allowance)
 
