@@ -174,8 +174,8 @@ notes: [CHANGELOG.md](CHANGELOG.md). Worked examples:
 ## Pricing
 
 Transcription is billed per minute from your transcribe.so wallet; quotes are
-free (`quote` before committing). Clip renders are $0.05 per started 60 s.
-Live Q&A uses a daily allowance, never the wallet. Details:
+free (`quote` before committing). Clip renders are billed per started 60 s.
+Live Q&A uses a daily allowance, never the wallet. Current prices:
 <https://transcribe.so/pricing>
 
 ## Directories
@@ -212,9 +212,9 @@ there.
   answers, subtitle files and clip links. Sign-in is OAuth in your browser on
   the first tool call, or a transcribe.so API key you enter through `/mcp`.
 - **Local files, Claude Code only, when you ask for one:** `createUpload`
-  returns a short-lived presigned HTTPS URL on transcribe.so's cloud object
-  storage, and Claude sends the file there with an HTTP PUT. Chat clients
-  never upload files.
+  returns a short-lived presigned HTTPS URL for transcribe.so's file storage
+  on Cloudflare R2 (an `r2.cloudflarestorage.com` address), and Claude sends
+  the file there with an HTTP PUT. Chat clients never upload files.
 - **Nothing else:** no hooks, no local server, no package downloads, no
   telemetry, and no credentials read from your machine. The skills and the
   `/transcribe` command are Markdown instructions for Claude.

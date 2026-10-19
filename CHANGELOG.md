@@ -11,11 +11,14 @@ Plugin manifests and skills only; the CLI stays at 0.2.0. Tracks MCP server
 ### Changed
 
 - All manifests move to 1.8.0 with the MCP server. Server 1.8.0 adds the clip
-  options from transcribe.so#1583 (`output`: audiogram, video or audio;
-  `caption_position`, `words_per_line`, `framing`, `highlight_color`,
-  `rights_affirmed` for video from a link) and accepts public TikTok, X and
-  Facebook video links as `platform_url`.
+  options from transcribe.so#1583 where the server enables them (`output`:
+  audiogram, video or audio; `caption_position`, `words_per_line`,
+  `framing`, `highlight_color`; `rights_affirmed` for video from a link,
+  when the source video can be used; up to 180 s) and accepts public TikTok,
+  X and Facebook video links as `platform_url`.
 - `skills/transcribe-audio`: the platform list names TikTok, X and Facebook.
+- `skills/get-transcript`, Clips: `output` and the caption options, the
+  180 s qualifier, and `getClip`'s `file_url` (`mp4_url` is null for audio).
 - README: a "What the Claude plugin runs and sends" section for directory
   review; the ChatGPT section points at the developer-mode connector only.
 - LICENSE: copyright holder is SUNMOON.CO PTE. LTD. (transcribe.so).
