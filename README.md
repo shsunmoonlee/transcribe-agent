@@ -90,9 +90,8 @@ first use.
 
 ### ChatGPT
 
-Settings, Connectors, Developer mode, then add `https://transcribe.so/mcp`.
-Or use the public Custom GPT linked from https://transcribe.so/agent, which
-needs no setup.
+Settings, Connectors, Developer mode, then add `https://transcribe.so/mcp` and
+sign in with your transcribe.so account.
 
 ### OpenClaw and any skills.sh agent
 
