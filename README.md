@@ -148,8 +148,8 @@ transcribe-so ask <id> -q "What did the guest say about pricing?"
 
 Design contract, made for agents:
 
-- stdout is JSON everywhere except the three raw-output commands —
-  `subtitles`, `transcript`, and `captions` (without `--json`) — which print a
+- stdout is JSON everywhere except the three raw-output commands
+  (`subtitles`, `transcript`, and `captions` without `--json`), which print a
   body you can pipe to a file. Errors are always the JSON envelope. All
   progress goes to stderr, so `| jq .` always works.
 - Exit codes are meaningful: 0 ok, 1 API error, 2 usage, 3 auth, 4 payment,
@@ -160,7 +160,7 @@ Design contract, made for agents:
   hold. `run` sends its `--max-usd` as the server ceiling too unless you pass
   `--no-server-ceiling`.
 - `create`/`run`/`quote`/`retry` always send an `Idempotency-Key`. Pass
-  `--idempotency-key` explicitly to make a retry safe across processes — the
+  `--idempotency-key` explicitly to make a retry safe across processes: the
   auto-generated one is per invocation, so re-running a command is a second
   key and a second charge.
 - A 409 `not_ready` is acted on by its `reason`: only
@@ -204,6 +204,24 @@ when `skills/` holds anything but `<skill>/SKILL.md`. Rules:
 The root [SKILL.md](SKILL.md) documents the CLI for `npx skills add` and is
 not part of any directory listing; CLI flags such as `--max-charge-usd` live
 there.
+
+## What the Claude plugin runs and sends
+
+- **One remote MCP server**, declared in [.mcp.json](.mcp.json):
+  `https://transcribe.so/mcp` over HTTPS. Claude sends it the links, questions
+  and transcript ids you give it, and it returns transcripts, chapters,
+  answers, subtitle files and clip links. Sign-in is OAuth in your browser on
+  the first tool call, or a transcribe.so API key you enter through `/mcp`.
+- **Local files, Claude Code only, when you ask for one:** `createUpload`
+  returns a short-lived presigned HTTPS URL on transcribe.so's cloud object
+  storage, and Claude sends the file there with an HTTP PUT. Chat clients
+  never upload files.
+- **Nothing else:** no hooks, no local server, no package downloads, no
+  telemetry, and no credentials read from your machine. The skills and the
+  `/transcribe` command are Markdown instructions for Claude.
+- Starting a transcription or rendering a clip draws on your transcribe.so
+  account balance. Claude checks the free quote first and asks before it
+  starts anything, unless you already gave it a spending limit.
 
 ## Privacy Policy
 
