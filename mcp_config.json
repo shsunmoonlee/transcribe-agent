@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "transcribe-so": {
+      "serverUrl": "https://transcribe.so/mcp"
+    }
+  }
+}

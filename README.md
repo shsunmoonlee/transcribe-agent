@@ -78,6 +78,30 @@ Install. Or add it to `.cursor/mcp.json` by hand:
 {"mcpServers":{"transcribe":{"url":"https://transcribe.so/mcp"}}}
 ```
 
+### Antigravity CLI
+
+```bash
+agy plugin install https://github.com/shsunmoonlee/transcribe-agent
+```
+
+The plugin ships [plugin.json](plugin.json) and [mcp_config.json](mcp_config.json),
+which point Antigravity CLI at the hosted MCP server, plus the skills in
+`skills/`.
+Antigravity CLI cannot run the OAuth sign-in itself (its `/mcp` panel shows
+"Auth Needed"), so connect the tools with an API key from
+https://transcribe.so/settings/api-keys:
+
+```bash
+agy mcp add --header "Authorization: Bearer tsk_live_..." transcribe-so-key https://transcribe.so/mcp
+```
+
+Use a name other than `transcribe-so`: MCP server names are global in
+Antigravity, and the plugin's own `transcribe-so` entry keeps showing
+"Auth Needed" in the CLI, which you can ignore. The Antigravity App and IDE
+also offer an Authenticate button for the plugin's server
+(Settings, Customizations). Already used the Gemini CLI extension?
+`agy plugin import gemini` converts it.
+
 ### Gemini CLI
 
 ```bash
@@ -86,7 +110,8 @@ gemini extensions install https://github.com/shsunmoonlee/transcribe-agent
 
 The extension ships [gemini-extension.json](gemini-extension.json), which
 points Gemini CLI at the hosted MCP server. It opens a browser to sign in on
-first use.
+first use. Since 2026-06-18 Gemini CLI serves paid Gemini API and enterprise
+keys; individual Google AI accounts use Antigravity CLI (above).
 
 ### ChatGPT
 

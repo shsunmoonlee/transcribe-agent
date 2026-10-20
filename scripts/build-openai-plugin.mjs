@@ -37,6 +37,7 @@ const OTHER_MANIFESTS = [
   [".cursor-plugin/plugin.json", (m) => m.version],
   [".grok-plugin/plugin.json", (m) => m.version],
   ["gemini-extension.json", (m) => m.version],
+  ["plugin.json", (m) => m.version],
 ];
 
 let cleanOnFail = false;
