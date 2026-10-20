@@ -1,6 +1,7 @@
 {
   "name": "transcribe-so",
   "displayName": "transcribe.so",
+  "icon": "./assets/logo-400.png",
   "version": "1.8.0",
   "description": "Transcribe audio and video (YouTube, podcasts, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips, via the transcribe.so remote MCP server.",
   "author": {
