@@ -1,5 +1,7 @@
 {
   "name": "transcribe-so",
+  "displayName": "transcribe.so",
+  "icon": "./assets/logo-400.png",
   "version": "1.8.0",
   "description": "Transcribe audio and video (YouTube, podcasts, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips, via the transcribe.so remote MCP server.",
   "author": {
@@ -8,6 +10,10 @@
     "url": "https://transcribe.so"
   },
   "homepage": "https://transcribe.so/agent",
+  "documentationUrl": "https://transcribe.so/developers/docs",
+  "supportUrl": "https://transcribe.so/contact",
+  "privacyPolicyUrl": "https://transcribe.so/privacy-policy",
+  "termsOfServiceUrl": "https://transcribe.so/terms-of-service",
   "repository": "https://github.com/shsunmoonlee/transcribe-agent",
   "license": "MIT",
   "keywords": [
