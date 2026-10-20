@@ -87,10 +87,17 @@ agy plugin install https://github.com/shsunmoonlee/transcribe-agent
 The plugin ships [plugin.json](plugin.json) and [mcp_config.json](mcp_config.json),
 which point Antigravity CLI at the hosted MCP server, plus the skills in
 `skills/` (the `/transcribe` command is converted to a skill on install).
-Sign in once: run `agy`, type `/mcp`, choose Authenticate next to
-`transcribe-so`, approve in the browser and paste the code back; the tools load
-after that. A `tsk_live_*` API key also works as a Bearer header. Already used
-the Gemini CLI extension? `agy plugin import gemini` converts it.
+Antigravity CLI cannot run the OAuth sign-in itself (its `/mcp` panel shows
+"Auth Needed"), so connect the tools with an API key from
+https://transcribe.so/settings/api-keys:
+
+```bash
+agy mcp add --header "Authorization: Bearer tsk_live_..." transcribe-so https://transcribe.so/mcp
+```
+
+The Antigravity App and IDE also offer an Authenticate button for the server
+(Settings, Customizations). Already used the Gemini CLI extension?
+`agy plugin import gemini` converts it.
 
 ### Gemini CLI
 
