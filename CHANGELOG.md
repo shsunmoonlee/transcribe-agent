@@ -17,6 +17,8 @@ Plugin manifests and skills only; the CLI stays at 0.2.0. Tracks MCP server
   when the source video can be used; up to 180 s) and accepts public TikTok,
   X and Facebook video links as `platform_url`.
 - `skills/transcribe-audio`: the platform list names TikTok, X and Facebook.
+- Codex `longDescription` (the OpenAI listing text): drops the claim that recordings
+  "stay private"; the listing only says to sign in with an existing account.
 - `skills/get-transcript`, Clips: `output` and the caption options, the
   180 s qualifier, and `getClip`'s `file_url` (`mp4_url` is null for audio).
 - README: a "What the Claude plugin runs and sends" section for directory

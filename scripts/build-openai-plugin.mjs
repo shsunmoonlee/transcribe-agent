@@ -22,7 +22,7 @@ const EM_DASH = String.fromCharCode(0x2014);
 // commerce_description, which exists to describe commerce behaviour and gets its own list.
 const BANNED = ["pric", "$", "€", "£", "free", "top up", "top-up", "upgrade", "subscri", "promo", "discount",
   "trial", "wallet", "balance", "paid", "pay", "charg", "plan", "credit", "billing", "cost", "dollar", "buy",
-  "purchas", "checkout", "coupon", "stripe"];
+  "purchas", "checkout", "coupon", "stripe", "privat"];
 const BANNED_PATTERNS = [/\d\s*(%|cents?\b|usd\b)/i];
 const COMMERCE_BANNED = ["pric", "$", "free", "top up", "top-up", "subscri", "promo", "discount", "trial", "wallet",
   "balance", "credit", "billing", "cost", "dollar", "plan"];
