@@ -17,6 +17,11 @@ Plugin manifests and skills only; the CLI stays at 0.2.0. Tracks MCP server
   when the source video can be used; up to 180 s) and accepts public TikTok,
   X and Facebook video links as `platform_url`.
 - `skills/transcribe-audio`: the platform list names TikTok, X and Facebook.
+- Antigravity CLI plugin: root `plugin.json` (name and description only, per
+  Antigravity's schema) and `mcp_config.json` (`serverUrl` to the hosted MCP
+  server); install with `agy plugin install <repo URL>`. The build's listing scan
+  also scans its description. `agy plugin list` shows a version from a source
+  Antigravity does not document.
 - Codex `longDescription` (the OpenAI listing text): drops the claim that recordings
   "stay private"; the listing only says to sign in with an existing account.
 - `skills/get-transcript`, Clips: `output` and the caption options, the

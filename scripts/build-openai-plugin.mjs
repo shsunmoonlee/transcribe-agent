@@ -38,6 +38,9 @@ const OTHER_MANIFESTS = [
   [".grok-plugin/plugin.json", (m) => m.version],
   ["gemini-extension.json", (m) => m.version],
 ];
+// Antigravity CLI plugin manifest: its schema allows only name and description, so no version to compare;
+// the description is scanned like the others.
+const DESCRIPTION_ONLY_MANIFESTS = ["plugin.json"];
 
 let cleanOnFail = false;
 function fail(lines) {
@@ -191,6 +194,9 @@ for (const [rel, versionOf] of OTHER_MANIFESTS) {
   const v = versionOf(m);
   if (v !== manifest.version) errors.push(`version mismatch: ${rel} has ${v}, .codex-plugin/plugin.json has ${manifest.version}`);
   for (const [path, text] of descriptionStrings(m, rel, [])) scanText(path, text, BANNED, BANNED_PATTERNS, errors);
+}
+for (const rel of DESCRIPTION_ONLY_MANIFESTS) {
+  for (const [path, text] of descriptionStrings(readJson(rel), rel, [])) scanText(path, text, BANNED, BANNED_PATTERNS, errors);
 }
 if (errors.length) fail(["listing scan failed:", ...errors.map((e) => "  " + e)]);
 
