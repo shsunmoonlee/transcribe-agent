@@ -71,7 +71,7 @@ function compareSemver(a, b) {
 }
 
 function isPluginFile(path) {
-  return PLUGIN_FILES.includes(path) || PLUGIN_DIRS.some((d) => path.startsWith(d));
+  return PLUGIN_FILES.includes(path) || PLUGIN_DIRS.some((d) => path.startsWith(d)) || /^\.[^/]+-plugin\//.test(path) || path.endsWith("/plugin.json");
 }
 
 const versions = MANIFESTS.map(([rel, pick]) => {
@@ -91,7 +91,7 @@ const version = distinct[0];
 const head = parseSemver(version, SOURCE_OF_TRUTH);
 
 const mergeBase = git(["merge-base", BASE_REF, "HEAD"]).trim();
-const changed = git(["diff", "--name-only", mergeBase]).split("\n").filter(Boolean);
+const changed = git(["diff", "--name-only", "--no-renames", mergeBase]).split("\n").filter(Boolean);
 const pluginChanged = changed.filter(isPluginFile);
 
 if (!pluginChanged.length) {
