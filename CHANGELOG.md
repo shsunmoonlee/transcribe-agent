@@ -3,6 +3,8 @@
 All notable changes to the `transcribe-so` CLI (0.x) and to the plugin
 manifests (1.x, tracking the MCP server version).
 
+Bump the version in every plugin manifest with each release; CI checks it.
+
 ## Plugin 1.8.0
 
 Plugin manifests and skills only; the CLI stays at 0.2.0. Tracks MCP server
