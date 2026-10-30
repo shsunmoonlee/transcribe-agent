@@ -5,6 +5,11 @@ manifests (1.x, tracking the MCP server version).
 
 Bump the version in every plugin manifest with each release; CI checks it.
 
+## Plugin 1.8.1
+
+README only: a How-to videos section (Claude Code, Claude, the Claude desktop app,
+ChatGPT, WhatsApp) and the playlist link. No manifest, skill or tool changes.
+
 ## Plugin 1.8.0
 
 Plugin manifests and skills only; the CLI stays at 0.2.0. Tracks MCP server
