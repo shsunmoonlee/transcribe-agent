@@ -10,6 +10,19 @@ sections, cited Q&A, subtitle files (SRT, VTT, karaoke VTT), full transcript
 exports, segment search, and paste-ready captions for Instagram, X, Threads,
 LinkedIn, YouTube, Spotify and Apple Podcasts.
 
+## How-to videos
+
+Each one is under 35 seconds. All of them are in the
+[How to use transcribe.so](https://www.youtube.com/playlist?list=PLeqqw_1jj7o8) playlist.
+
+| Where | Video |
+|---|---|
+| Claude Code | [Ask Claude Code who said what in a video](https://youtube.com/shorts/JOElfeCUXWI) |
+| Claude (claude.ai) | [Connect transcribe.so to Claude](https://youtu.be/UdyUHVT0kuU) |
+| Claude desktop app | [Who said what in a video, in the Claude app](https://youtu.be/RRJ7wrn3bs8) |
+| ChatGPT | [Use transcribe.so in ChatGPT](https://youtu.be/5M92RoVddkQ) |
+| WhatsApp (paid plans) | [Send a link, ask who said what](https://youtu.be/NxL981Oc-F8) |
+
 ## Install
 
 Keep a human in the loop: every paid call takes a max_charge_usd ceiling, and a
