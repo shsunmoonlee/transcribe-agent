@@ -1,6 +1,6 @@
 {
   "name": "transcribe-so",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "Transcribe audio and video (YouTube, podcasts, meetings, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips.",
   "author": {
     "name": "transcribe.so",
