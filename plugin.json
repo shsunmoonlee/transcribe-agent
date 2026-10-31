@@ -1,5 +1,23 @@
 {
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "transcribe-so",
-  "version": "1.8.1",
-  "description": "Transcribe audio and video (YouTube, podcasts, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips, via the transcribe.so remote MCP server."
+  "version": "1.8.2",
+  "description": "Transcribe audio and video (YouTube, podcasts, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips, via the transcribe.so remote MCP server.",
+  "author": {
+    "name": "transcribe.so",
+    "email": "support@transcribe.so",
+    "url": "https://transcribe.so"
+  },
+  "homepage": "https://transcribe.so/agent",
+  "repository": "https://github.com/shsunmoonlee/transcribe-agent",
+  "license": "MIT",
+  "keywords": [
+    "transcription",
+    "speech-to-text",
+    "subtitles",
+    "youtube",
+    "podcast",
+    "diarization",
+    "mcp"
+  ]
 }

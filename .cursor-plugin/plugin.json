@@ -1,6 +1,6 @@
 {
   "name": "transcribe-so",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Transcribe audio and video (YouTube, podcasts, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips, via the transcribe.so remote MCP server.",
   "author": {
     "name": "transcribe.so",
@@ -26,8 +26,7 @@
   "mcpServers": {
     "transcribe-so": {
       "type": "http",
-      "url": "https://transcribe.so/mcp",
-      "note": "Official transcribe.so MCP server (hosted, streamable HTTP). OAuth on first connection, or a tsk_live_* API key as a Bearer token."
+      "url": "https://transcribe.so/mcp"
     }
   }
 }
