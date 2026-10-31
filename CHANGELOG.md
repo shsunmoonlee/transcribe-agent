@@ -5,6 +5,21 @@ manifests (1.x, tracking the MCP server version).
 
 Bump the version in every plugin manifest with each release; CI checks it.
 
+## Plugin 1.8.2
+
+Manifests only; no skill or tool changes.
+
+### Added
+
+- The root `plugin.json` now declares the Agent Plugins 1.0.0 schema (`$schema`, author, homepage,
+  repository, license, keywords), and a root `mcp.json` lists the remote server as `streamable-http`.
+  Kiro Powers and the Cursor Marketplace read this format; Antigravity still validates it and loads
+  it as a native plugin unless its Agent Plugins flag is on.
+
+### Changed
+
+- `.cursor-plugin/plugin.json` drops the non-standard `note` key from its MCP server entry.
+
 ## Plugin 1.8.1
 
 README only: a How-to videos section (Claude Code, Claude, the Claude desktop app,
