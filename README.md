@@ -45,8 +45,8 @@ hard rules, and exit codes.
 ```
 
 The plugin connects Claude to the remote MCP server at
-`https://transcribe.so/mcp` (24 tools) and bundles the `transcribe-audio` and
-`get-transcript` skills plus a one-shot `/transcribe` command. First tool call
+`https://transcribe.so/mcp` (24 tools) and bundles the `transcribe-audio`,
+`get-transcript` and `video-edit` skills plus a one-shot `/transcribe` command. First tool call
 triggers the OAuth browser flow; alternatively authenticate with a
 `tsk_live_*` API key via `/mcp`.
 
@@ -158,6 +158,22 @@ transcribe-so subtitles <id> --format srt > out.srt
 transcribe-so captions <id> --for instagram --variant highlights
 transcribe-so search "pricing" | jq -r '.hits[] | "\(.speaker): \(.text)"'
 transcribe-so ask <id> -q "What did the guest say about pricing?"
+```
+
+## Edit video with Claude
+
+Claude edits video from text. The `video-edit` skill takes word timings and speaker labels from
+transcribe.so and cuts on your machine with ffmpeg: a rough cut of a long talking-head take (dead air
+and false starts removed), vertical shorts that start and end on whole sentences, and captions (SRT
+plus Remotion `Caption[]` JSON) re-timed to the edit. The helper is one standard-library Python file:
+
+```bash
+curl -fsSL -o vedit.py https://github.com/shsunmoonlee/transcribe-agent/raw/main/examples/video-edit/vedit.py
+python3 vedit.py words 4821 -o words.json          # needs TRANSCRIBE_API_KEY
+python3 vedit.py roughcut words.json -o cuts.json
+python3 vedit.py render take.mp4 cuts.json edited.mp4 --words words.json
+python3 vedit.py snap words.json picks.json -o clips.json
+python3 vedit.py render take.mp4 clips.json short.mp4 --vertical --words words.json
 ```
 
 ## Commands

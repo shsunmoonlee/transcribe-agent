@@ -5,6 +5,16 @@ manifests (1.x, tracking the MCP server version).
 
 Bump the version in every plugin manifest with each release; CI checks it.
 
+## Plugin 1.9.0
+
+### Added
+
+- `video-edit` skill: Claude edits video and audio from transcribe.so word timings. Rough cut of a
+  long take, vertical shorts snapped to sentence boundaries, captions (SRT and Remotion caption
+  JSON) re-timed to the edit, and post copy from the same transcript.
+- `examples/video-edit/vedit.py`: the standard-library helper the skill uses (`words`, `roughcut`,
+  `snap`, `render`, `captions`). `render` works with ffmpeg 6 to 9 and uses VideoToolbox on macOS.
+
 ## Plugin 1.8.2
 
 Manifests only; no skill or tool changes.
