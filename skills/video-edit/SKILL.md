@@ -12,7 +12,7 @@ standard library only) turns word timings into cut lists and renders them.
 
 ## Setup (once per project)
 
-1. ffmpeg and ffprobe on PATH (`ffmpeg -version`). Homebrew's default build has no caption burn-in
+1. ffmpeg and ffprobe on PATH (`ffmpeg -version`; on macOS `brew install ffmpeg` installs both). Homebrew's default build has no caption burn-in
    filter (no libass, no drawtext); the script writes caption files instead, see Captions.
 2. Get the helper:
    `curl -fsSL -o vedit.py https://github.com/shsunmoonlee/transcribe-agent/raw/main/examples/video-edit/vedit.py`
@@ -30,14 +30,17 @@ own footage. Wait for `completed`, then save every word timing:
 
 ## Workflow A: rough cut of a long take
 
-`python3 vedit.py roughcut words.json -o cuts.json` keeps every spoken word, removes pauses longer
-than `--gap` seconds (default 0.6), pads each kept span by `--pad` (0.12 s) so no word is clipped,
-and drops a sentence the speaker immediately restarts with the same opening words (a false start;
-`--keep-retakes` turns this off). Read the printed stats: `removed_pct` above 25 on a normal talking
-head means a timing problem, so stop and check before rendering.
+`python3 vedit.py roughcut words.json -o cuts.json` keeps every spoken word, cuts any silence
+between two words longer than `--gap` seconds (default 0.6; each kept span keeps `--pad` 0.12 s
+around its words so nothing is clipped), and drops a false start: a sentence the same speaker
+abandons and restarts with mostly the same opening words (`--keep-retakes` turns this off).
+`cuts.json` lists every removed false start under `removed` with its time and text: show those to
+the user before rendering. Read the printed stats too: `removed_pct` above 25 on a normal talking
+head means a timing problem, so stop and check.
 
-`python3 vedit.py render source.mp4 cuts.json edited.mp4 --words words.json` renders the cut and
-writes `edited.srt` and `edited.captions.json` aligned to the new timeline.
+`python3 vedit.py render source.mp4 cuts.json edited.mp4 --words words.json` renders the cut (in
+batches, so hour-long takes with thousands of cuts stay fast) and writes `edited.srt` and
+`edited.captions.json` aligned to the new timeline. An audio-only source renders an `.m4a`.
 
 Transcripts are clean verbatim: filler sounds such as "um" are usually not words in the
 transcript, so they are cut only when they sit inside a removed pause. Say so if the user asks for
@@ -50,11 +53,15 @@ every filler to be removed.
    quotes with their start), and `highlights`. Or read the full text with `getTranscript` and pick
    ranges yourself. A good short opens on a complete, surprising sentence, stands alone without the
    rest of the video, and ends on a finished thought, usually 25 to 55 seconds.
-2. Write the picks as JSON: `[{"start": 24.8, "end": 66.5, "title": "What problem do you solve?"}]`.
-   Clip ideas have no end time; use start plus 55 and let the next step find the sentence end.
+2. Write the picks as JSON in SECONDS: `[{"start": 24.8, "end": 66.5, "title": "What problem do you solve?"}]`.
+   `posting_chapters` items sit one level down, under the style name (`clips`, then the style,
+   then `items`), and carry `start_ms`: divide by 1000. Clip ideas have no end time; use start plus 55 and let the next step
+   find the sentence end.
 3. `python3 vedit.py snap words.json picks.json --max 60 -o clips.json` moves each start back to
-   the beginning of its sentence and each end forward to the end of a sentence, never past `--max`.
-   Show the user `first_words` and `last_words` of every clip and let them confirm or adjust.
+   the beginning of its sentence and each end forward to the end of a sentence, never longer than
+   `--max`. Ranges it cannot place (past the end, end before start, no words) are listed under
+   `skipped` with a reason; fix those rather than ignoring them. Show the user `first_words` and
+   `last_words` of every clip and let them confirm or adjust.
 4. `python3 vedit.py render source.mp4 clips.json short.mp4 --vertical --words words.json` writes
    `short-1.mp4`, `short-2.mp4` and so on at 1080x1920 (center crop), each with its own SRT and
    caption JSON.

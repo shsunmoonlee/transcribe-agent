@@ -16,7 +16,8 @@
       "description": "Transcribe audio and video (YouTube, podcasts, uploads) into speaker-labelled transcripts with chapters, cited Q&A, word timings, subtitles, and hosted captioned clips, via the transcribe.so remote MCP server.",
       "skills": [
         "./skills/transcribe-audio",
-        "./skills/get-transcript"
+        "./skills/get-transcript",
+        "./skills/video-edit"
       ]
     }
   ]
