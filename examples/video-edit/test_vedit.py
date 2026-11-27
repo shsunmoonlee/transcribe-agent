@@ -68,6 +68,36 @@ class RoughCut(unittest.TestCase):
                  ("You", 1.2, 1.4), ("can", 1.45, 1.6), ("do", 1.65, 1.8), ("this.", 1.85, 2.1)]
         self.assertEqual(self.cut(items)["stats"]["retakes_removed"], 0)
 
+    def test_question_and_thanks_repeats_are_not_retakes(self):
+        items = [("Thank", 0.0, 0.2), ("you.", 0.25, 0.5), ("Thank", 0.8, 1.0), ("you", 1.05, 1.2), ("so", 1.25, 1.4),
+                 ("much.", 1.45, 1.7), ("Is", 2.0, 2.1), ("it", 2.15, 2.3), ("hard?", 2.35, 2.6), ("Is", 2.9, 3.0),
+                 ("it", 3.05, 3.2), ("hard", 3.25, 3.4), ("to", 3.45, 3.5), ("learn?", 3.55, 3.9)]
+        self.assertEqual(self.cut(items)["stats"]["retakes_removed"], 0)
+
+    def test_retake_needs_same_speaker_and_short_pause(self):
+        attempt = [("So", 0.0, 0.2), ("the", 0.25, 0.4), ("reason", 0.45, 0.8), ("is.", 0.85, 1.0)]
+        with tempfile.TemporaryDirectory() as tmp:
+            data = {"words": [{"text": t, "start_ms": int(s * 1000), "end_ms": int(e * 1000), "speaker": "A"}
+                              for t, s, e in attempt] +
+                             [{"text": t, "start_ms": int(s * 1000), "end_ms": int(e * 1000), "speaker": "B"}
+                              for t, s, e in [("So", 2.0, 2.2), ("the", 2.25, 2.4), ("reason", 2.45, 2.8),
+                                              ("we", 2.85, 3.0), ("grew.", 3.05, 3.4)]]}
+            p = os.path.join(tmp, "w.json"); json.dump(data, open(p, "w"))
+            out = os.path.join(tmp, "c.json"); run("roughcut", p, "-o", out)
+            self.assertEqual(json.load(open(out))["stats"]["retakes_removed"], 0)
+        late = attempt + [("So", 8.0, 8.2), ("the", 8.25, 8.4), ("reason", 8.45, 8.8), ("we", 8.85, 9.0),
+                          ("grew.", 9.05, 9.4)]
+        self.assertEqual(self.cut(late)["stats"]["retakes_removed"], 0)
+
+    def test_leading_filler_is_not_kept(self):
+        c = self.cut([("Um", 0.0, 0.4), ("hello", 0.45, 0.8), ("there.", 0.85, 1.2)])
+        self.assertGreaterEqual(c["keep"][0][0], 0.4 - 1e-6)
+
+    def test_spans_never_overlap(self):
+        c = self.cut([("one", 0.0, 0.3), ("two", 0.95, 1.2), ("um", 1.2, 1.6), ("three.", 1.5, 1.9)])
+        for (a, b), (c2, _) in zip(c["keep"], c["keep"][1:]):
+            self.assertLessEqual(b, c2 + 1e-9)
+
     def test_keep_retakes_flag(self):
         items = [("So", 0.0, 0.2), ("the", 0.25, 0.4), ("reason.", 0.45, 0.8),
                  ("So", 1.0, 1.2), ("the", 1.25, 1.4), ("reason", 1.45, 1.8), ("is", 1.85, 2.0), ("growth.", 2.05, 2.4)]
@@ -132,6 +162,36 @@ class Render(unittest.TestCase):
             dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", out],
                                        capture_output=True, text=True).stdout)
             self.assertAlmostEqual(dur, 90 * 0.2, delta=0.6)
+
+    def test_off_grid_cuts_do_not_drift(self):
+        """300 cuts off a 30 fps grid: output length must equal the snapped arithmetic captions use."""
+        with tempfile.TemporaryDirectory() as tmp:
+            src = os.path.join(tmp, "src.mp4")
+            subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=96x54:rate=30:duration=200",
+                            "-f", "lavfi", "-i", "sine=frequency=440:duration=200", "-c:v", "libx264", "-g", "30",
+                            "-c:a", "aac", "-shortest", src], check=True)
+            spans = [[i * 0.6 + 0.0137, i * 0.6 + 0.4211] for i in range(300)]
+            cuts = os.path.join(tmp, "c.json")
+            json.dump({"mode": "roughcut", "keep": spans}, open(cuts, "w"))
+            out = os.path.join(tmp, "o.mp4")
+            r = run("render", src, cuts, out, "--encoder", "x264")
+            expected = json.loads(r.stdout.strip().splitlines()[-1])["seconds"]
+            vdur = float(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
+                                         "stream=duration", "-of", "csv=p=0", out], capture_output=True, text=True).stdout)
+            self.assertAlmostEqual(vdur, expected, delta=0.1)
+
+    def test_cover_art_audio_counts_as_audio_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            art = os.path.join(tmp, "art.png")
+            subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=c=red:s=64x64", "-frames:v", "1", art],
+                           check=True)
+            src = os.path.join(tmp, "pod.mp3")
+            subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "sine=duration=5", "-i", art, "-map", "0:a",
+                            "-map", "1:v", "-c:a", "libmp3lame", "-c:v", "png", "-disposition:v", "attached_pic", src],
+                           check=True)
+            has_v, has_a, _ = vedit.probe(src)
+            self.assertFalse(has_v)
+            self.assertTrue(has_a)
 
     def test_audio_only_source_renders_m4a(self):
         with tempfile.TemporaryDirectory() as tmp:

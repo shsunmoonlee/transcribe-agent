@@ -77,7 +77,7 @@ def sentences(words):
 
 def is_retake(this, nxt):
     """`this` (normalized words) is an abandoned attempt that `nxt` restarts."""
-    if len(this) < 2 or len(this) > 14:
+    if len(this) < 3 or len(this) > 14:
         return False
     common = 0
     for a, b in zip(this, nxt):
@@ -105,6 +105,8 @@ def cmd_roughcut(a):
                 continue
             if words[nxt[0]]["s"] - words[cur[-1]]["e"] > 6:
                 continue
+            if re.search(r"[?!？！]['\")\]]*$", words[cur[-1]]["text"]):
+                continue  # a finished question or exclamation is not an abandoned attempt
             this = [norm(words[i]["text"]) for i in cur if i not in reason]
             again = [norm(words[i]["text"]) for i in nxt if i not in reason]
             if is_retake(this, again):
@@ -115,17 +117,18 @@ def cmd_roughcut(a):
         if i in reason:
             continue
         s, e = max(0.0, w["s"] - a.pad), w["e"] + a.pad
-        dropped = [] if prev_kept is None else [k for k in range(prev_kept + 1, i) if k in reason]
+        lo = 0 if prev_kept is None else prev_kept + 1
+        dropped = [k for k in range(lo, i) if k in reason]
+        if dropped:
+            # Never re-include a dropped word, but never clip a kept word either (crosstalk can overlap).
+            s = max(s, min(words[dropped[-1]]["e"], w["s"]))
         if spans and dropped:
             spans[-1][1] = min(spans[-1][1], max(words[prev_kept]["e"], words[dropped[0]]["s"]))
-            s = max(s, words[dropped[-1]]["e"])
+            s = max(s, spans[-1][1])
             spans.append([s, e])
-        elif spans and w["s"] - words[prev_kept]["e"] <= a.gap:
+        elif spans and (w["s"] - words[prev_kept]["e"] <= a.gap or s <= spans[-1][1]):
             spans[-1][1] = max(spans[-1][1], e)
         else:
-            if spans and s < spans[-1][1]:
-                mid = (words[prev_kept]["e"] + w["s"]) / 2
-                spans[-1][1], s = mid, mid
             spans.append([s, e])
         prev_kept = i
     group = None
@@ -202,12 +205,37 @@ def write(obj, path):
 
 
 def probe(src):
-    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type", "-of", "csv=p=0", src],
+    """(has_video, has_audio, fps). Cover art in an audio file (attached_pic) does not count as video."""
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
+                        "stream=codec_type,r_frame_rate:stream_disposition=attached_pic", "-of", "json", src],
                        capture_output=True, text=True)
     if r.returncode != 0:
         sys.exit(f"ffprobe could not read {src}: {r.stderr.strip()[-300:]}")
-    kinds = set(r.stdout.split())
-    return "video" in kinds, "audio" in kinds
+    streams = json.loads(r.stdout or "{}").get("streams", [])
+    video = [s for s in streams if s.get("codec_type") == "video" and not (s.get("disposition") or {}).get("attached_pic")]
+    fps = None
+    if video:
+        num, _, den = (video[0].get("r_frame_rate") or "0/1").partition("/")
+        try:
+            fps = float(num) / float(den or 1) or None
+        except (ValueError, ZeroDivisionError):
+            fps = None
+    return bool(video), any(s.get("codec_type") == "audio" for s in streams), fps
+
+
+def snap_to_frames(spans, fps):
+    """Move every cut onto the source frame grid so each kept span lasts a whole number of frames and the
+    rendered timeline matches the arithmetic captions are re-timed with (no drift per cut)."""
+    out = []
+    for s, e in spans:
+        s, e = round(s * fps) / fps, round(e * fps) / fps
+        if e <= s:
+            continue
+        if out and s <= out[-1][1]:
+            out[-1][1] = max(out[-1][1], e)
+        else:
+            out.append([s, e])
+    return out
 
 
 def encoder_args(choice):
@@ -216,7 +244,7 @@ def encoder_args(choice):
         choice = "videotoolbox" if "h264_videotoolbox" in encs else "x264"
     if choice == "videotoolbox":
         return ["-c:v", "h264_videotoolbox", "-b:v", "6M"]
-    return ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20"]
+    return ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p"]
 
 
 def run_ffmpeg(head, fc, tail):
@@ -234,20 +262,24 @@ def run_ffmpeg(head, fc, tail):
         sys.exit(f"ffmpeg failed: {r.stderr.strip()[-600:]}")
 
 
-def render_batch(src, spans, out, has_v, has_a, vertical, venc):
-    """One intermediate file (h264 + PCM in Matroska) for up to BATCH spans, input seeked to the batch."""
+def render_batch(src, spans, out, has_v, has_a, fps, vertical, venc):
+    """One intermediate file (h264 + PCM in QuickTime) for up to BATCH spans, input seeked to the batch."""
     t0 = max(0.0, spans[0][0] - 1.0)
+    if fps:
+        t0 = int(t0 * fps) / fps
     t1 = spans[-1][1] + 1.0
+    half = 0.5 / fps if fps else 0.0
     parts, labels = [], ""
     for i, (s, e) in enumerate(spans):
         rs, re_ = s - t0, e - t0
         if has_v:
-            parts.append(f"[0:v]trim=start={rs:.3f}:end={re_:.3f},setpts=PTS-STARTPTS[v{i}];")
+            # Frame pts sit on the grid; a half-frame offset keeps exactly the frames of [s, e) despite float error.
+            parts.append(f"[0:v]trim=start={max(0.0, rs - half):.6f}:end={re_ - half:.6f},setpts=PTS-STARTPTS[v{i}];")
             labels += f"[v{i}]"
         if has_a:
             fade_out = max(0.0, re_ - rs - 0.02)
-            parts.append(f"[0:a]atrim=start={rs:.3f}:end={re_:.3f},asetpts=PTS-STARTPTS,afade=t=in:d=0.01,"
-                         f"afade=t=out:st={fade_out:.3f}:d=0.02[a{i}];")
+            parts.append(f"[0:a]atrim=start={rs:.6f}:end={re_:.6f},asetpts=PTS-STARTPTS,afade=t=in:d=0.01,"
+                         f"afade=t=out:st={fade_out:.6f}:d=0.02[a{i}];")
             labels += f"[a{i}]"
     outs = ("[cv]" if has_v else "") + ("[ca]" if has_a else "")
     fc = "".join(parts) + f"{labels}concat=n={len(spans)}:v={int(has_v)}:a={int(has_a)}{outs}"
@@ -260,23 +292,29 @@ def render_batch(src, spans, out, has_v, has_a, vertical, venc):
         maps += ["-map", vlabel] + venc
     if has_a:
         maps += ["-map", "[ca]", "-c:a", "pcm_s16le"]
-    head =["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-ss", f"{t0:.3f}", "-t", f"{t1 - t0:.3f}", "-i", src]
+    head = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-ss", f"{t0:.6f}", "-t", f"{t1 - t0:.6f}",
+            "-i", src]
     run_ffmpeg(head, fc, maps + [out])
 
 
 def render_spans(src, spans, out, vertical, enc):
-    has_v, has_a = probe(src)
+    """Render spans; returns (output path, the spans actually rendered after frame snapping)."""
+    has_v, has_a, fps = probe(src)
     if not has_v and not has_a:
         sys.exit(f"{src} has no audio or video stream")
     if not has_v and out.endswith(".mp4"):
         out = out[:-4] + ".m4a"
+    if has_v and fps:
+        spans = snap_to_frames(spans, fps)
+        if not spans:
+            sys.exit("every span is shorter than one frame")
     venc = encoder_args(enc) if has_v else []
     batches = [spans[i:i + BATCH] for i in range(0, len(spans), BATCH)]
     with tempfile.TemporaryDirectory() as tmp:
         parts = []
         for n, b in enumerate(batches, 1):
-            part = os.path.join(tmp, f"part{n:04d}.mkv")
-            render_batch(src, b, part, has_v, has_a, vertical, venc)
+            part = os.path.join(tmp, f"part{n:04d}.mov")
+            render_batch(src, b, part, has_v, has_a, fps, vertical, venc)
             parts.append(part)
             if len(batches) > 1:
                 warn(f"rendered batch {n}/{len(batches)}")
@@ -292,15 +330,18 @@ def render_spans(src, spans, out, vertical, enc):
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:
             sys.exit(f"ffmpeg concat failed: {r.stderr.strip()[-600:]}")
-    return out
+    return out, spans
 
 
 def retime(words, spans):
+    """Map words onto the edited timeline. A word belongs to the span holding its midpoint and is clamped to it
+    (frame snapping can move a cut by half a frame)."""
     out, offset = [], 0.0
     for s, e in spans:
         for w in words:
-            if w["s"] >= s - 1e-3 and w["e"] <= e + 1e-3:
-                out.append({**w, "s": w["s"] - s + offset, "e": w["e"] - s + offset})
+            if s <= (w["s"] + w["e"]) / 2 <= e:
+                ws, we = max(w["s"], s), min(w["e"], e)
+                out.append({**w, "s": ws - s + offset, "e": we - s + offset})
         offset += e - s
     return out
 
@@ -355,7 +396,7 @@ def cmd_render(a):
         bad = [sp for sp in spans if sp[1] <= sp[0]]
         if bad:
             sys.exit(f"invalid span(s) {bad[:3]} in {a.cuts}")
-        out = render_spans(a.source, spans, out, a.vertical, a.encoder)
+        out, spans = render_spans(a.source, spans, out, a.vertical, a.encoder)
         if words:
             rw = retime(words, spans)
             write_srt(rw, os.path.splitext(out)[0] + ".srt")
